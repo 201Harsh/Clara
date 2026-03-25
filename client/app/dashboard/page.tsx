@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import AxiosInstance from "../config/AxiosInstance";
 import { useAuthStore } from "../store/auth-store";
+import AxiosInstance from "../config/AxiosInstance";
 
 function AuthLoader({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
@@ -11,29 +11,32 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
   const { accessToken, setAccessToken } = useAuthStore();
   const [isInitializing, setIsInitializing] = useState(true);
 
+  // Prevents the refresh logic from firing twice in React Strict Mode
+  const hasAttemptedRefresh = useRef(false);
+
   useEffect(() => {
     const initAuth = async () => {
       const urlToken = searchParams.get("token");
 
       if (urlToken) {
-        // 1. Initial Login: Save token from URL to Zustand Memory
+        // 1. Initial Login from Google
         setAccessToken(urlToken);
-
-        // 2. Clean the URL (removes ?token=... without refreshing the page)
-        window.history.replaceState({}, document.title, "/dashboard");
+        // Use Next.js router to clean the URL safely
+        router.replace("/dashboard");
         setIsInitializing(false);
-      } else if (!accessToken) {
-        // 3. Page Refresh: Memory wiped. Recover via HttpOnly Refresh Cookie.
+      } else if (!accessToken && !hasAttemptedRefresh.current) {
+        // 2. Page Refresh Recovery
+        hasAttemptedRefresh.current = true;
         try {
           const { data } = await AxiosInstance.get("/users/refresh");
           setAccessToken(data.accessToken);
           setIsInitializing(false);
         } catch (error) {
-          // If refresh fails, they are truly logged out. Send to signup.
-          router.push("/signup");
+          console.error("Session refresh failed. Redirecting to login.");
+          router.replace("/signup?error=SessionExpired");
         }
-      } else {
-        // 4. Already logged in and memory is intact.
+      } else if (accessToken) {
+        // 3. Already secured in memory
         setIsInitializing(false);
       }
     };
@@ -41,7 +44,6 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
     initAuth();
   }, [searchParams, accessToken, setAccessToken, router]);
 
-  // Premium loading state while checking tokens
   if (isInitializing) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center">
