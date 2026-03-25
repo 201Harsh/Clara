@@ -5,7 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
 
 const AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // Crucial for sending the HttpOnly refresh cookie
+  withCredentials: true, 
 });
 
 AxiosInstance.interceptors.request.use((config) => {
