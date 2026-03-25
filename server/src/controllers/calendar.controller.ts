@@ -6,7 +6,6 @@ import { triageMeetings } from "../main/clara-ai.js";
 
 export const GetDailyMeetings = async (req: Request, res: Response) => {
   try {
-    // FIX: Extracting 'id' instead of 'userId' based on your JWT signature
     const userPayload = req.user as { id: string } | undefined;
     const userId = userPayload?.id;
 
@@ -35,7 +34,6 @@ export const GetDailyMeetings = async (req: Request, res: Response) => {
 
 export const SyncCalendar = async (req: Request, res: Response) => {
   try {
-    // FIX: Extracting 'id' instead of 'userId' based on your JWT signature
     const userPayload = req.user as { id: string } | undefined;
     const userId = userPayload?.id;
 
@@ -66,11 +64,9 @@ export const SyncCalendar = async (req: Request, res: Response) => {
 
     const userRole = req.body.role || "Professional";
 
-    // Call the Llama 3.3 Triage Brain
     const decisions = await triageMeetings(rawMeetings, userRole);
 
     const bulkOps = rawMeetings.map((meeting: any) => {
-      // Find the specific AI decision or fallback if Llama missed it
       const triageData = decisions.find((d: any) => d.id === meeting.id) || {
         decision: "human",
         reason: "Fallback: Unclassified",
