@@ -56,7 +56,6 @@ export const RefreshAccessToken = async (req: Request, res: Response) => {
       return res.status(403).json({ error: "Forbidden. User not found." });
     }
 
-    // FIXED: Casting the options block to 'any' resolves the TS overload error
     const newAccessToken = jwt.sign(
       { userId: user._id },
       process.env.ACCESS_TOKEN_SECRET as string,

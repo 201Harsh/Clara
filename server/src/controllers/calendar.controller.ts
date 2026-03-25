@@ -4,10 +4,8 @@ import UserModel from "../models/user-model.js";
 import { getTodaysMeetings } from "../services/calendar.service.js";
 import { triageMeetings } from "../main/clara-ai.js";
 
-// 1. Fetch from DB for the UI
 export const GetDailyMeetings = async (req: Request, res: Response) => {
   try {
-    // FIXED: Safely cast req.user inside the function
     const userPayload = req.user as { userId: string } | undefined;
     const userId = userPayload?.userId;
 
@@ -15,7 +13,6 @@ export const GetDailyMeetings = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // Get start and end of today
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const end = new Date();
@@ -32,7 +29,6 @@ export const GetDailyMeetings = async (req: Request, res: Response) => {
   }
 };
 
-// 2. Force Sync with Google & Run AI Triage
 export const SyncCalendar = async (req: Request, res: Response) => {
   try {
     const userPayload = req.user as { userId: string } | undefined;
@@ -68,7 +64,6 @@ export const SyncCalendar = async (req: Request, res: Response) => {
 
       return {
         updateOne: {
-          // FIXED: Explicitly cast userId to string so TS knows it is not undefined
           filter: { userId: userId as string, googleEventId: meeting.id },
           update: {
             $set: {
@@ -85,7 +80,6 @@ export const SyncCalendar = async (req: Request, res: Response) => {
       };
     });
 
-    // FIXED: Cast bulkOps to 'any' to bypass hyper-strict Mongoose schema typing
     await CalendarEventModel.bulkWrite(bulkOps as any);
 
     return res

@@ -19,7 +19,7 @@ const CalendarEventSchema: Schema = new Schema(
     title: { type: String, required: true },
     startTime: { type: Date, required: true },
     endTime: { type: Date, required: true },
-    meetLink: { type: String }, // Can be null if it's an in-person meeting
+    meetLink: { type: String }, 
     decision: {
       type: String,
       enum: ["human", "bot", "skipped"],
