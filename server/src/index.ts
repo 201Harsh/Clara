@@ -1,7 +1,7 @@
-import app from "./app.js";
-import http from "http";
 import "../src/config/dotenv.js";
 import connectDB from "./database/mongodb.js";
+import app from "./app.js";
+import http from "http";
 
 const server = http.createServer(app);
 
