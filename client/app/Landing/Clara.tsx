@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import {
@@ -15,13 +15,12 @@ import {
   Activity,
   Lock,
 } from "lucide-react";
-import { SiGooglemeet, SiZoom } from "react-icons/si";
+import { SiGooglemeet } from "react-icons/si";
 
 export default function ClaraLandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const [logIndex, setLogIndex] = useState(0);
 
-  // Fake AI Processing Logs for the Hero Widget
   const aiLogs = [
     "> Authenticating Google Calendar...",
     "> Scanning today's schedule: 4 events found.",
@@ -38,7 +37,6 @@ export default function ClaraLandingPage() {
     return () => clearInterval(interval);
   }, [aiLogs.length]);
 
-  // GSAP Hero Animation
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from(".hero-text", {
@@ -67,20 +65,18 @@ export default function ClaraLandingPage() {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-purple-500/30 overflow-x-hidden">
-      {/* 1. HERO SECTION */}
       <section
         ref={heroRef}
         className="relative min-h-screen flex flex-col items-center justify-center pt-20 pb-12 px-4"
       >
-        {/* Animated AI Grid & True Purple Glow */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4c1d9522_1px,transparent_1px),linear-gradient(to_bottom,#4c1d9522_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_10%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4c1d9522_1px,transparent_1px),linear-gradient(to_bottom,#4c1d9522_1px,transparent_1px)] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,#000_10%,transparent_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(147,51,234,0.15)_0%,rgba(0,0,0,0)_60%)]" />
 
         <div className="hero-text mb-6 px-4 py-1.5 rounded-full border border-purple-500/40 bg-purple-500/10 text-purple-300 text-sm font-medium flex items-center gap-2 backdrop-blur-md shadow-[0_0_20px_rgba(147,51,234,0.2)] z-10">
           <ShieldAlert size={14} /> Agent Status: Online & Ready
         </div>
 
-        <h1 className="hero-text text-6xl md:text-8xl font-extrabold text-center tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white via-zinc-100 to-purple-200/50 z-10">
+        <h1 className="hero-text text-6xl md:text-8xl font-extrabold text-center tracking-tight mb-6 bg-clip-text text-transparent bg-linear-to-b from-white via-zinc-100 to-purple-200/50 z-10">
           Meet Clara.
           <br />
           Your Ghost PA.
@@ -98,14 +94,12 @@ export default function ClaraLandingPage() {
           </button>
         </div>
 
-        {/* FLOATING AI TERMINAL WIDGET (Fills the empty space) */}
         <div className="hero-widget w-full max-w-3xl z-10 perspective-1000">
           <motion.div
             animate={{ y: [0, -10, 0] }}
             transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
             className="bg-[#05000a]/80 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 shadow-[0_0_50px_rgba(147,51,234,0.15)] relative overflow-hidden"
           >
-            {/* Widget Header */}
             <div className="flex items-center justify-between mb-4 border-b border-purple-500/20 pb-4">
               <div className="flex items-center gap-2 text-purple-400">
                 <Activity size={18} className="animate-pulse" />
@@ -120,7 +114,6 @@ export default function ClaraLandingPage() {
               </div>
             </div>
 
-            {/* Animated Terminal Logs */}
             <div className="h-24 flex flex-col justify-end font-mono text-sm text-zinc-400">
               <AnimatePresence mode="popLayout">
                 {aiLogs
@@ -139,13 +132,11 @@ export default function ClaraLandingPage() {
                   ))}
               </AnimatePresence>
             </div>
-            {/* Subtle sweeping light effect */}
-            <div className="absolute top-0 left-0 w-[200%] h-full bg-gradient-to-r from-transparent via-purple-500/5 to-transparent -rotate-45 translate-x-[-100%] animate-[shimmer_3s_infinite]" />
+            <div className="absolute top-0 left-0 w-[200%] h-full bg-linear-to-r from-transparent via-purple-500/5 to-transparent -rotate-45 -translate-x-full animate-[shimmer_3s_infinite]" />
           </motion.div>
         </div>
       </section>
 
-      {/* 2. CALENDAR TRIAGE (Clean UI, No Code) */}
       <section className="py-24 px-4 max-w-7xl mx-auto">
         <motion.div
           initial="hidden"
@@ -197,9 +188,8 @@ export default function ClaraLandingPage() {
         </motion.div>
       </section>
 
-      {/* 3. STEALTH INFILTRATION */}
       <section className="py-24 px-4 bg-[#030008] border-y border-purple-900/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-125 h-125 bg-purple-600/10 rounded-full blur-[150px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto relative z-10">
           <motion.div
@@ -242,7 +232,6 @@ export default function ClaraLandingPage() {
         </div>
       </section>
 
-      {/* 4. THE BRAIN */}
       <section className="py-24 px-4 max-w-7xl mx-auto text-center">
         <motion.div
           initial="hidden"
@@ -266,8 +255,7 @@ export default function ClaraLandingPage() {
         </motion.div>
       </section>
 
-      {/* 5. CTA */}
-      <section className="py-24 px-4 bg-gradient-to-b from-black to-[#0a0314] border-t border-purple-900/20">
+      <section className="py-24 px-4 bg-linear-to-b from-black to-[#0a0314] border-t border-purple-900/20">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial="hidden"
@@ -291,17 +279,6 @@ export default function ClaraLandingPage() {
           </motion.div>
         </div>
       </section>
-
-      {/* Shimmer animation for Tailwind config */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes shimmer {
-          100% { transform: translateX(100%) rotate(-45deg); }
-        }
-      `,
-        }}
-      />
     </div>
   );
 }
