@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "../store/auth-store";
 
-// Use NEXT_PUBLIC_SERVER_URL or fallback to 5000 (where your Express server is)
 const BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
 
 const AxiosInstance = axios.create({
@@ -9,9 +8,7 @@ const AxiosInstance = axios.create({
   withCredentials: true, // Crucial for sending the HttpOnly refresh cookie
 });
 
-// REQUEST INTERCEPTOR: Attach memory token to headers
 AxiosInstance.interceptors.request.use((config) => {
-  // Grab the token directly from Zustand's state
   const token = useAuthStore.getState().accessToken;
 
   if (token) {
@@ -34,7 +31,6 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// RESPONSE INTERCEPTOR: Handle 401s and token refresh
 AxiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -58,12 +54,10 @@ AxiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Hit the refresh route we built in Express
         const { data } = await axios.get(`${BASE_URL}/users/refresh`, {
           withCredentials: true,
         });
 
-        // Save the new token into the Zustand memory store
         useAuthStore.getState().setAccessToken(data.accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
@@ -73,7 +67,6 @@ AxiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
 
-        // Wipe memory and redirect if refresh fails
         useAuthStore.getState().logout();
         if (typeof window !== "undefined") {
           window.location.href = "/signup?error=SessionExpired";
