@@ -12,7 +12,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import AxiosInstance from "../config/AxiosInstance"; 
+import AxiosInstance from "../config/AxiosInstance";
 
 interface CalendarEvent {
   _id: string;
@@ -75,7 +75,7 @@ export default function DashboardPage() {
     show: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
 
-  const itemVars : any = {
+  const itemVars: any = {
     hidden: { opacity: 0, y: 20 },
     show: {
       opacity: 1,
@@ -120,7 +120,7 @@ export default function DashboardPage() {
 
         <AnimatePresence>
           {error && (
-            <motion.initial
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
@@ -129,7 +129,7 @@ export default function DashboardPage() {
                 <AlertCircle size={20} />
                 <p className="font-medium text-sm">{error}</p>
               </div>
-            </motion.initial>
+            </motion.div>
           )}
         </AnimatePresence>
 
