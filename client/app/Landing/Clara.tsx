@@ -16,6 +16,7 @@ import {
   Lock,
 } from "lucide-react";
 import { SiGooglemeet } from "react-icons/si";
+import Link from "next/link";
 
 export default function ClaraLandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -89,9 +90,11 @@ export default function ClaraLandingPage() {
         </p>
 
         <div className="hero-text flex flex-col sm:flex-row gap-4 z-10 mb-16">
-          <button className="px-8 py-4 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:shadow-[0_0_35px_rgba(168,85,247,0.6)]">
-            Connect Google Calendar <ChevronRight size={18} />
-          </button>
+          <Link href="/signup">
+            <button className="cursor-pointer px-8 py-4 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:shadow-[0_0_35px_rgba(168,85,247,0.6)]">
+              Connect Google Calendar <ChevronRight size={18} />
+            </button>
+          </Link>
         </div>
 
         <div className="hero-widget w-full max-w-3xl z-10 perspective-1000">
