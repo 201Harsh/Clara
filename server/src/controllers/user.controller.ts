@@ -18,6 +18,7 @@ export const RegisterAndLoginUsingGoogle = async (
     }
 
     const tokens = generateTokens(user._id.toString());
+    console.log(tokens)
 
     setRefreshCookie(res, tokens.refreshToken);
 
