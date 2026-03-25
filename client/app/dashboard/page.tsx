@@ -18,13 +18,10 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
       const urlToken = searchParams.get("token");
 
       if (urlToken) {
-        // 1. Login success from Google redirect
         setAccessToken(urlToken);
-        // Replace the URL instantly to hide the token from the address bar
         router.replace("/dashboard");
         setIsInitializing(false);
       } else if (!accessToken && !hasAttemptedRefresh.current) {
-        // 2. Page was refreshed. Attempt to recover session via cookie.
         hasAttemptedRefresh.current = true;
         try {
           const { data } = await AxiosInstance.get("/users/refresh");
@@ -32,11 +29,9 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
           setIsInitializing(false);
         } catch (error) {
           console.error("Refresh failed (401/404). Terminating session.");
-          // Only redirect if the refresh ACTUALLY fails (e.g., cookie expired)
           router.replace("/signup?error=SessionExpired");
         }
       } else if (accessToken) {
-        // 3. User is navigating normally, token is safe in RAM.
         setIsInitializing(false);
       }
     };
@@ -44,7 +39,6 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
     initAuth();
   }, [searchParams, accessToken, setAccessToken, router]);
 
-  // Prevent the white flash by rendering a dark loading state
   if (isInitializing) {
     return (
       <div className="min-h-screen bg-[#05000a] flex flex-col items-center justify-center">
