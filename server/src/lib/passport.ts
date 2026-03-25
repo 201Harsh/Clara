@@ -40,18 +40,30 @@ passport.use(
         let user = await UserModel.findOne({ email });
 
         if (user) {
-          if (!user.googleId) {
-            user.googleId = googleId;
-            await user.save();
+          // 1. Update the access token every time they log in so Clara has fresh API access
+          user.googleAccessToken = accessToken;
+
+          // 2. Google ONLY sends a refresh token on the first login.
+          // We must check if it exists before saving, otherwise we overwrite the good one with undefined.
+          if (refreshToken) {
+            user.googleRefreshToken = refreshToken;
           }
 
+          if (!user.googleId) {
+            user.googleId = googleId;
+          }
+
+          await user.save();
           return done(null, user);
         }
 
+        // 3. For new users, save everything immediately
         const newUser = await UserModel.create({
           name: profile.displayName,
           email,
           googleId,
+          googleAccessToken: accessToken,
+          googleRefreshToken: refreshToken,
         });
 
         return done(null, newUser);
