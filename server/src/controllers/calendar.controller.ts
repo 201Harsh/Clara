@@ -9,15 +9,13 @@ export const GetDailyMeetings = async (
   res: Response,
 ): Promise<any> => {
   try {
-    // FORCE EXTRACT: Bypassing Express typing limits to guarantee we grab the ID
     const user = (req as any).user;
     const userId = user?.userId || user?.id || user?._id;
 
     if (!userId) {
-      return res.status(401).json({
-        error: "Unauthorized. Missing User ID in token.",
-        receivedPayload: user,
-      });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized. Missing User ID in token." });
     }
 
     const start = new Date();
@@ -31,8 +29,10 @@ export const GetDailyMeetings = async (
     }).sort({ startTime: 1 });
 
     return res.status(200).json({ meetings });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to fetch local meetings" });
+  } catch (error: any) {
+    return res.status(500).json({
+      error: error.message,
+    });
   }
 };
 
@@ -65,7 +65,9 @@ export const SyncCalendar = async (
       return res.status(200).json({ message: "No meetings today." });
     }
 
-    const userRole = req.body.role || "Professional";
+    // THE FIX: Optional chaining safely handles an empty Axios POST request
+    const userRole = req.body?.role || "Professional";
+
     const decisions = await triageMeetings(rawMeetings, userRole);
 
     const bulkOps = rawMeetings.map((meeting: any) => {
@@ -97,9 +99,7 @@ export const SyncCalendar = async (
       .status(200)
       .json({ message: "Calendar successfully synced and triaged." });
   } catch (error: any) {
-    console.error("Sync Error:", error.message);
-    return res.status(500).json({
-      error: error.message || "Internal server error while syncing calendar.",
-    });
+    console.error("Sync Error:", error);
+    return res.status(500).json({ error: "Failed to sync calendar" });
   }
 };
