@@ -5,7 +5,6 @@ import UserModel from "../models/user-model.js";
 
 export const TriageMeetings = async (req: Request, res: Response) => {
   try {
-    // FIXED: Safely cast req.user inside the function to avoid Route signature errors
     const userPayload = req.user as { userId: string } | undefined;
     const userId = userPayload?.userId;
 

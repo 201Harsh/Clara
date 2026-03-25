@@ -25,8 +25,7 @@ export async function triageMeetings(meetingsData: any, userRole: string) {
       { role: "user", content: JSON.stringify(meetingsData) },
     ],
     model: "llama-3.1-8b-instant",
-    temperature: 0.1, // Keep it highly deterministic and logical
-    response_format: { type: "json_object" }, // Forces Groq to return clean JSON
+    response_format: { type: "json_object" },
   });
 
   const response = completion.choices[0]?.message?.content || "[]";

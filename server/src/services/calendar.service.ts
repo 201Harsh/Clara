@@ -17,7 +17,6 @@ export const getTodaysMeetings = async (
 
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
-  // Get start and end of today
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
@@ -32,7 +31,6 @@ export const getTodaysMeetings = async (
     orderBy: "startTime",
   });
 
-  // Filter out events that don't have a Google Meet/Zoom link
   const meetings = response.data.items?.filter(
     (event) =>
       event.hangoutLink ||
