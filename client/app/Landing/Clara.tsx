@@ -25,7 +25,7 @@ export default function ClaraLandingPage() {
     "> Authenticating Google Calendar...",
     "> Scanning today's schedule: 4 events found.",
     "> Triage: 1-on-1 requires human presence.",
-    "> Triage: All-Hands Sync delegated to proxy.",
+    "> Triage: All-Hands Sync delegated to Clara.",
     "> Booting stealth infiltration protocol...",
     "> Clara is standing by.",
   ];
@@ -181,7 +181,7 @@ export default function ClaraLandingPage() {
                 <p className="text-sm text-zinc-500">1:30 PM • Zoom</p>
               </div>
               <div className="flex items-center gap-2 text-purple-400 bg-purple-400/10 px-3 py-1 rounded-full text-sm font-medium">
-                <Bot size={14} /> Proxy Attends
+                <Bot size={14} /> Clara Attends
               </div>
             </div>
           </div>
@@ -224,7 +224,7 @@ export default function ClaraLandingPage() {
                 When it is time for a meeting you are skipping, Clara
                 automatically connects. She bypasses waiting rooms, secures
                 audio permissions, and sits silently in the call as your
-                designated proxy, capturing every word spoken without
+                designated infiltrator, capturing every word spoken without
                 interrupting the flow.
               </p>
             </div>
