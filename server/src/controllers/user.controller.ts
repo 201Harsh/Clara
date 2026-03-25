@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { generateTokens, setRefreshCookie } from "../utils/user-utils.js";
+import jwt from "jsonwebtoken";
+import UserModel from "../models/user-model.js";
 
 interface GoogleUser {
   _id: string;
@@ -18,7 +20,7 @@ export const RegisterAndLoginUsingGoogle = async (
     }
 
     const tokens = generateTokens(user._id.toString());
-    console.log(tokens)
+    console.log(tokens);
 
     setRefreshCookie(res, tokens.refreshToken);
 
@@ -30,5 +32,43 @@ export const RegisterAndLoginUsingGoogle = async (
     return res.redirect(
       `${process.env.CLIENT_SIDE_URL}/signup?error=AuthFailed`,
     );
+  }
+};
+
+export const RefreshAccessToken = async (req: Request, res: Response) => {
+  try {
+    // Make sure cookie-parser is installed and configured in your main Express app!
+    const refreshToken = req.cookies?.clara_refresh;
+
+    if (!refreshToken) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized. No Refresh Token found." });
+    }
+
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET as string,
+    ) as { userId: string };
+
+    const user = await UserModel.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(403).json({ error: "Forbidden. User not found." });
+    }
+
+    // Issue a fresh 15-minute Access Token
+    const newAccessToken = jwt.sign(
+      { userId: user._id },
+      process.env.ACCESS_TOKEN_SECRET as string,
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" },
+    );
+
+    return res.status(200).json({ accessToken: newAccessToken });
+  } catch (error: any) {
+    console.error("Refresh Token Error:", error.message);
+    return res
+      .status(403)
+      .json({ error: "Forbidden. Token expired or invalid." });
   }
 };
