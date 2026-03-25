@@ -15,8 +15,8 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans flex items-center justify-center relative overflow-hidden p-4">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#4c1d9515_1px,transparent_1px),linear-gradient(to_bottom,#4c1d9515_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,#000_20%,transparent_100%)]" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-linear(to_right,#4c1d9515_1px,transparent_1px),linear-linear(to_bottom,#4c1d9515_1px,transparent_1px)] bg-size-[40px_40px] mask-[radial-linear(ellipse_80%_80%_at_50%_50%,#000_20%,transparent_100%)]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -25,7 +25,7 @@ export default function SignupPage() {
         className="w-full max-w-md relative z-10"
       >
         <div className="bg-[#05000a]/80 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-8 shadow-[0_0_40px_rgba(147,51,234,0.15)] overflow-hidden relative">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-50" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-purple-400 to-transparent opacity-50" />
 
           <div className="text-center mb-10">
             <motion.div
@@ -46,17 +46,11 @@ export default function SignupPage() {
 
           <div className="space-y-4 mb-8">
             <div className="flex items-center gap-3 text-sm text-zinc-300 bg-white/5 p-3 rounded-lg border border-white/5">
-              <CalendarClock
-                size={18}
-                className="text-purple-400 flex-shrink-0"
-              />
+              <CalendarClock size={18} className="text-purple-400 shrink-0" />
               <p>Grants read-only access to triage your daily meetings.</p>
             </div>
             <div className="flex items-center gap-3 text-sm text-zinc-300 bg-white/5 p-3 rounded-lg border border-white/5">
-              <ShieldCheck
-                size={18}
-                className="text-emerald-400 flex-shrink-0"
-              />
+              <ShieldCheck size={18} className="text-emerald-400 shrink-0" />
               <p>OAuth 2.0 encrypted. Clara never sees your password.</p>
             </div>
           </div>
@@ -67,12 +61,6 @@ export default function SignupPage() {
           >
             <FcGoogle size={24} />
             <span>Continue with Google</span>
-
-            {/* Hover Sweep Effect */}
-            <div
-              className="absolute inset-0 rounded-xl bg-linear-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] overflow-hidden"
-              style={{ clipPath: "inset(0)" }}
-            />
           </button>
 
           <p className="text-center text-xs text-zinc-500 mt-6">
@@ -81,7 +69,6 @@ export default function SignupPage() {
           </p>
         </div>
       </motion.div>
-
     </div>
   );
 }
