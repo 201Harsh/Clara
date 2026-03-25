@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
+import { generateTokens, setRefreshCookie } from "../utils/user-utils.js";
 
 interface GoogleUser {
   _id: string;
   email: string;
-  JwtGenToken: () => string;
 }
 
 export const RegisterAndLoginUsingGoogle = async (
@@ -13,13 +13,20 @@ export const RegisterAndLoginUsingGoogle = async (
   try {
     const user = req.user as GoogleUser;
 
-    if (!user) {
+    if (!user || !user._id) {
       return res.redirect(`${process.env.CLIENT_SIDE_URL}/signup?error=NoUser`);
     }
 
-    
+    // FIXED: Now passing the required userId into the generator
+    const tokens = generateTokens(user._id.toString());
+
+    setRefreshCookie(res, tokens.refreshToken);
+
+    return res.redirect(
+      `${process.env.CLIENT_SIDE_URL}/?token=${tokens.accessToken}`,
+    );
   } catch (error) {
-    console.log(error);
+    console.error("Google Auth Error:", error);
     return res.redirect(
       `${process.env.CLIENT_SIDE_URL}/signup?error=AuthFailed`,
     );
