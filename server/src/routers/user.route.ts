@@ -1,6 +1,6 @@
 import { Router } from "express";
 import passport from "../lib/passport.js";
-import { RegisterAndLoginUsingGoogle } from "../controllers/user.controller.js";
+import { RefreshAccessToken, RegisterAndLoginUsingGoogle } from "../controllers/user.controller.js";
 
 const userRouter = <Router>Router();
 
@@ -25,5 +25,7 @@ userRouter.get(
   }),
   RegisterAndLoginUsingGoogle,
 );
+
+userRouter.get("/refresh", RefreshAccessToken);
 
 export default userRouter;

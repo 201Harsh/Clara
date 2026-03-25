@@ -2,16 +2,15 @@
 
 import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "../store/auth-store";
 import AxiosInstance from "../config/AxiosInstance";
+import { useAuthStore } from "../store/auth-store";
 
 function AuthLoader({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { accessToken, setAccessToken } = useAuthStore();
-  const [isInitializing, setIsInitializing] = useState(true);
 
-  // Prevents the refresh logic from firing twice in React Strict Mode
+  const [isInitializing, setIsInitializing] = useState(true);
   const hasAttemptedRefresh = useRef(false);
 
   useEffect(() => {
@@ -19,24 +18,25 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
       const urlToken = searchParams.get("token");
 
       if (urlToken) {
-        // 1. Initial Login from Google
+        // 1. Login success from Google redirect
         setAccessToken(urlToken);
-        // Use Next.js router to clean the URL safely
+        // Replace the URL instantly to hide the token from the address bar
         router.replace("/dashboard");
         setIsInitializing(false);
       } else if (!accessToken && !hasAttemptedRefresh.current) {
-        // 2. Page Refresh Recovery
+        // 2. Page was refreshed. Attempt to recover session via cookie.
         hasAttemptedRefresh.current = true;
         try {
           const { data } = await AxiosInstance.get("/users/refresh");
           setAccessToken(data.accessToken);
           setIsInitializing(false);
         } catch (error) {
-          console.error("Session refresh failed. Redirecting to login.");
+          console.error("Refresh failed (401/404). Terminating session.");
+          // Only redirect if the refresh ACTUALLY fails (e.g., cookie expired)
           router.replace("/signup?error=SessionExpired");
         }
       } else if (accessToken) {
-        // 3. Already secured in memory
+        // 3. User is navigating normally, token is safe in RAM.
         setIsInitializing(false);
       }
     };
@@ -44,12 +44,13 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
     initAuth();
   }, [searchParams, accessToken, setAccessToken, router]);
 
+  // Prevent the white flash by rendering a dark loading state
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#05000a] flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4" />
         <p className="text-purple-400 font-mono text-sm tracking-widest animate-pulse">
-          SECURING UPLINK...
+          RESTORING SECURE SESSION...
         </p>
       </div>
     );
