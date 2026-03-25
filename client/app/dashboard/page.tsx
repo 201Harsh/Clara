@@ -11,6 +11,7 @@ import {
   Bot,
   AlertCircle,
   CheckCircle2,
+  AlignLeft,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 
@@ -37,7 +38,6 @@ export default function DashboardPage() {
       const { data } = await AxiosInstance.get("/calendar/today");
       setMeetings(data.meetings);
     } catch (err) {
-      console.error("Failed to fetch meetings:", err);
       setError("Failed to load local schedule. Please rescan.");
     } finally {
       setIsLoading(false);
@@ -53,9 +53,8 @@ export default function DashboardPage() {
     setError(null);
     try {
       await AxiosInstance.post("/calendar/sync");
-      await fetchMeetings(); // Reload the fresh UI data after sync
+      await fetchMeetings();
     } catch (err) {
-      console.error("Sync failed:", err);
       setError("Calendar synchronization failed. Check Google permissions.");
     } finally {
       setIsSyncing(false);
@@ -74,8 +73,7 @@ export default function DashboardPage() {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
-
-  const itemVars: any = {
+  const itemVars = {
     hidden: { opacity: 0, y: 20 },
     show: {
       opacity: 1,
@@ -149,7 +147,7 @@ export default function DashboardPage() {
           >
             {meetings.length === 0 ? (
               <motion.div
-                variants={itemVars}
+                variants={itemVars as any}
                 className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/50"
               >
                 <CheckCircle2
@@ -167,23 +165,19 @@ export default function DashboardPage() {
               meetings.map((meeting) => (
                 <motion.div
                   key={meeting._id}
-                  variants={itemVars}
-                  className={`relative overflow-hidden rounded-xl p-6 border backdrop-blur-sm transition-all hover:shadow-lg ${
-                    meeting.decision === "bot"
-                      ? "bg-[#0a0314] border-purple-500/30 shadow-[0_0_20px_rgba(147,51,234,0.05)]"
-                      : "bg-[#021108] border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.05)]"
-                  }`}
+                  variants={itemVars as any}
+                  className={`relative overflow-hidden rounded-xl p-6 border backdrop-blur-sm transition-all hover:shadow-lg ${meeting.decision === "bot" ? "bg-[#0a0314] border-purple-500/30" : "bg-[#021108] border-emerald-500/30"}`}
                 >
                   <div
                     className={`absolute left-0 top-0 bottom-0 w-1 ${meeting.decision === "bot" ? "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]" : "bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.8)]"}`}
                   />
 
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 ml-2">
-                    <div>
+                  <div className="flex flex-col md:flex-row justify-between gap-6 ml-2">
+                    <div className="flex-1">
                       <h3 className="text-xl font-bold text-white mb-2">
                         {meeting.title}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400 mb-4">
                         <span className="flex items-center gap-1.5">
                           <Clock size={16} /> {formatTime(meeting.startTime)} -{" "}
                           {formatTime(meeting.endTime)}
@@ -199,29 +193,36 @@ export default function DashboardPage() {
                           </a>
                         )}
                       </div>
+
+                      {/* Description / AI Reason */}
+                      <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-zinc-300 text-sm font-medium mb-1">
+                          <AlignLeft size={14} /> Description / AI Note
+                        </div>
+                        <p className="text-sm text-zinc-500">
+                          {meeting.reason}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="flex flex-col md:items-end gap-2">
+                    {/* Who is Attending Block */}
+                    <div className="flex flex-col md:items-end justify-start min-w-[200px]">
+                      <div className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2">
+                        Attending Status
+                      </div>
                       <div
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border ${
-                          meeting.decision === "bot"
-                            ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
-                            : "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-                        }`}
+                        className={`inline-flex w-full md:w-auto items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold border ${meeting.decision === "bot" ? "bg-purple-500/10 text-purple-300 border-purple-500/30" : "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"}`}
                       >
                         {meeting.decision === "bot" ? (
                           <>
-                            <Bot size={16} /> Clara Attending
+                            <Bot size={18} /> Clara (AI Proxy)
                           </>
                         ) : (
                           <>
-                            <User size={16} /> Human Required
+                            <User size={18} /> Harsh (Human)
                           </>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-500 max-w-[250px] md:text-right italic">
-                        "{meeting.reason}"
-                      </p>
                     </div>
                   </div>
                 </motion.div>

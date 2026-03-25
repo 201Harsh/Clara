@@ -4,15 +4,20 @@ import UserModel from "../models/user-model.js";
 import { getTodaysMeetings } from "../services/calendar.service.js";
 import { triageMeetings } from "../main/clara-ai.js";
 
-export const GetDailyMeetings = async (req: Request, res: Response) => {
+export const GetDailyMeetings = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
   try {
-    const userPayload = req.user as { id: string } | undefined;
-    const userId = userPayload?.id;
+    // FORCE EXTRACT: Bypassing Express typing limits to guarantee we grab the ID
+    const user = (req as any).user;
+    const userId = user?.userId || user?.id || user?._id;
 
     if (!userId) {
-      return res
-        .status(401)
-        .json({ error: "Unauthorized. Missing User ID in token." });
+      return res.status(401).json({
+        error: "Unauthorized. Missing User ID in token.",
+        receivedPayload: user,
+      });
     }
 
     const start = new Date();
@@ -27,15 +32,17 @@ export const GetDailyMeetings = async (req: Request, res: Response) => {
 
     return res.status(200).json({ meetings });
   } catch (error) {
-    console.error("Fetch Meetings Error:", error);
     return res.status(500).json({ error: "Failed to fetch local meetings" });
   }
 };
 
-export const SyncCalendar = async (req: Request, res: Response) => {
+export const SyncCalendar = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
   try {
-    const userPayload = req.user as { id: string } | undefined;
-    const userId = userPayload?.id;
+    const user = (req as any).user;
+    const userId = user?.userId || user?.id || user?._id;
 
     if (!userId) {
       return res
@@ -43,19 +50,15 @@ export const SyncCalendar = async (req: Request, res: Response) => {
         .json({ error: "Unauthorized. Missing User ID in token." });
     }
 
-    const user = await UserModel.findById(userId);
+    const dbUser = await UserModel.findById(userId);
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found in database." });
-    }
-
-    if (!user.googleAccessToken || !user.googleRefreshToken) {
+    if (!dbUser?.googleAccessToken || !dbUser?.googleRefreshToken) {
       return res.status(400).json({ error: "Google Calendar not connected." });
     }
 
     const rawMeetings = await getTodaysMeetings(
-      user.googleAccessToken,
-      user.googleRefreshToken,
+      dbUser.googleAccessToken,
+      dbUser.googleRefreshToken,
     );
 
     if (!rawMeetings || rawMeetings.length === 0) {
@@ -63,7 +66,6 @@ export const SyncCalendar = async (req: Request, res: Response) => {
     }
 
     const userRole = req.body.role || "Professional";
-
     const decisions = await triageMeetings(rawMeetings, userRole);
 
     const bulkOps = rawMeetings.map((meeting: any) => {
@@ -91,17 +93,13 @@ export const SyncCalendar = async (req: Request, res: Response) => {
     });
 
     await CalendarEventModel.bulkWrite(bulkOps as any);
-
     return res
       .status(200)
       .json({ message: "Calendar successfully synced and triaged." });
   } catch (error: any) {
-    console.error("🔥 CRITICAL SYNC ERROR 🔥");
-    console.error("Message:", error.message);
-    console.error("Stack:", error.stack);
-    if (error.response) {
-      console.error("API Response Data:", error.response.data);
-    }
-    return res.status(500).json({ error: "Failed to sync calendar" });
+    console.error("Sync Error:", error.message);
+    return res.status(500).json({
+      error: error.message || "Internal server error while syncing calendar.",
+    });
   }
 };
