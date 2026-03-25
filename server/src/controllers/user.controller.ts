@@ -17,7 +17,6 @@ export const RegisterAndLoginUsingGoogle = async (
       return res.redirect(`${process.env.CLIENT_SIDE_URL}/signup?error=NoUser`);
     }
 
-    // FIXED: Now passing the required userId into the generator
     const tokens = generateTokens(user._id.toString());
 
     setRefreshCookie(res, tokens.refreshToken);
