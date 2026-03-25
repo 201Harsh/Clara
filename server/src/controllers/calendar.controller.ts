@@ -67,13 +67,11 @@ export const SyncCalendar = async (
 
     const userRole = req.body?.role || "Professional";
 
-    // Attempt the AI Triage
     let decisions: any[] = [];
     try {
       const aiResult = await triageMeetings(rawMeetings, userRole);
 
-      // CRITICAL FIX: Ensure aiResult is an array.
-      // Sometimes LLMs return { triage: [...] } instead of just [...]
+    
       if (Array.isArray(aiResult)) {
         decisions = aiResult;
       } else if (aiResult && Array.isArray(aiResult.triage)) {
@@ -88,13 +86,11 @@ export const SyncCalendar = async (
       }
     } catch (aiError) {
       console.error("AI Triage Failed:", aiError);
-      // We don't crash the whole sync if the AI fails, we just fall back
     }
 
     const bulkOps = rawMeetings.map((meeting: any) => {
-      // Now decisions is guaranteed to be an array, so .find() will not crash
       const triageData = decisions.find((d: any) => d.id === meeting.id) || {
-        decision: "human", // Default to human if AI failed to classify
+        decision: "human",
         reason: "Fallback: AI classification failed or was unclassified.",
       };
 
