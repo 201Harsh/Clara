@@ -12,9 +12,8 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import AxiosInstance from "../config/AxiosInstance"; // Adjust path if needed
+import AxiosInstance from "../config/AxiosInstance"; 
 
-// Match this to your backend Mongoose schema
 interface CalendarEvent {
   _id: string;
   title: string;
@@ -32,7 +31,6 @@ export default function DashboardPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Auto-fetch today's local meetings on load
   const fetchMeetings = async () => {
     try {
       setError(null);
@@ -50,7 +48,6 @@ export default function DashboardPage() {
     fetchMeetings();
   }, []);
 
-  // 2. Manual Sync: Calls Google API + Groq AI Triage + Updates DB
   const handleSync = async () => {
     setIsSyncing(true);
     setError(null);
@@ -65,7 +62,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Helper to format ISO time to "10:30 AM"
   const formatTime = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -74,7 +70,6 @@ export default function DashboardPage() {
     });
   };
 
-  // Animation variants
   const containerVars = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -91,11 +86,9 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 p-6 md:p-12 relative overflow-hidden">
-      {/* Background Glow */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="max-w-5xl mx-auto relative z-10">
-        {/* HEADER */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-zinc-900 pb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -125,7 +118,6 @@ export default function DashboardPage() {
           </button>
         </header>
 
-        {/* ERROR STATE */}
         <AnimatePresence>
           {error && (
             <motion.initial
@@ -141,7 +133,6 @@ export default function DashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* LOADING STATE */}
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-zinc-500">
             <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4" />
@@ -150,7 +141,6 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : (
-          /* MEETINGS GRID */
           <motion.div
             variants={containerVars}
             initial="hidden"
@@ -184,13 +174,11 @@ export default function DashboardPage() {
                       : "bg-[#021108] border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.05)]"
                   }`}
                 >
-                  {/* Left Accent Bar */}
                   <div
                     className={`absolute left-0 top-0 bottom-0 w-1 ${meeting.decision === "bot" ? "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]" : "bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.8)]"}`}
                   />
 
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 ml-2">
-                    {/* Meeting Info */}
                     <div>
                       <h3 className="text-xl font-bold text-white mb-2">
                         {meeting.title}
@@ -213,7 +201,6 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* AI Decision Badge */}
                     <div className="flex flex-col md:items-end gap-2">
                       <div
                         className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border ${
