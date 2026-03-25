@@ -11,11 +11,9 @@ import {
   Bot,
   AlertCircle,
   CheckCircle2,
-  AlignLeft, // Added AlignLeft back for your description UI
+  AlignLeft,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
-// 1. IMPORT THE AUTH STORE
-import { useAuthStore } from "../store/auth-store";
 
 interface CalendarEvent {
   _id: string;
@@ -29,9 +27,6 @@ interface CalendarEvent {
 }
 
 export default function DashboardPage() {
-  // 2. EXTRACT THE TOKEN FROM STATE
-  const { accessToken } = useAuthStore();
-
   const [meetings, setMeetings] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -40,7 +35,7 @@ export default function DashboardPage() {
   const fetchMeetings = async () => {
     try {
       setError(null);
-      setIsLoading(true); // Ensure loading state is active when fetching
+      setIsLoading(true);
       const { data } = await AxiosInstance.get("/calendar/today");
       setMeetings(data.meetings);
     } catch (err) {
@@ -51,14 +46,10 @@ export default function DashboardPage() {
     }
   };
 
-  // 3. THE MAGIC FIX: Only run fetchMeetings IF the accessToken exists.
-  // By adding [accessToken] to the dependency array, React will automatically
-  // wait for the AuthLoader to finish its job before firing the API.
+  // THE FIX: Unconditionally fire the fetch. The Layout already guarantees we are authenticated.
   useEffect(() => {
-    if (accessToken) {
-      fetchMeetings();
-    }
-  }, [accessToken]);
+    fetchMeetings();
+  }, []);
 
   const handleSync = async () => {
     setIsSyncing(true);
