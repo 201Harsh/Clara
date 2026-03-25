@@ -6,11 +6,14 @@ import { triageMeetings } from "../main/clara-ai.js";
 
 export const GetDailyMeetings = async (req: Request, res: Response) => {
   try {
-    const userPayload = req.user as { userId: string } | undefined;
-    const userId = userPayload?.userId;
+    // FIX: Extracting 'id' instead of 'userId' based on your JWT signature
+    const userPayload = req.user as { id: string } | undefined;
+    const userId = userPayload?.id;
 
     if (!userId) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized. Missing User ID in token." });
     }
 
     const start = new Date();
@@ -25,22 +28,30 @@ export const GetDailyMeetings = async (req: Request, res: Response) => {
 
     return res.status(200).json({ meetings });
   } catch (error) {
+    console.error("Fetch Meetings Error:", error);
     return res.status(500).json({ error: "Failed to fetch local meetings" });
   }
 };
 
 export const SyncCalendar = async (req: Request, res: Response) => {
   try {
-    const userPayload = req.user as { userId: string } | undefined;
-    const userId = userPayload?.userId;
+    // FIX: Extracting 'id' instead of 'userId' based on your JWT signature
+    const userPayload = req.user as { id: string } | undefined;
+    const userId = userPayload?.id;
 
     if (!userId) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized. Missing User ID in token." });
     }
 
     const user = await UserModel.findById(userId);
 
-    if (!user?.googleAccessToken || !user?.googleRefreshToken) {
+    if (!user) {
+      return res.status(404).json({ error: "User not found in database." });
+    }
+
+    if (!user.googleAccessToken || !user.googleRefreshToken) {
       return res.status(400).json({ error: "Google Calendar not connected." });
     }
 
@@ -54,9 +65,12 @@ export const SyncCalendar = async (req: Request, res: Response) => {
     }
 
     const userRole = req.body.role || "Professional";
+
+    // Call the Llama 3.3 Triage Brain
     const decisions = await triageMeetings(rawMeetings, userRole);
 
     const bulkOps = rawMeetings.map((meeting: any) => {
+      // Find the specific AI decision or fallback if Llama missed it
       const triageData = decisions.find((d: any) => d.id === meeting.id) || {
         decision: "human",
         reason: "Fallback: Unclassified",
@@ -85,8 +99,13 @@ export const SyncCalendar = async (req: Request, res: Response) => {
     return res
       .status(200)
       .json({ message: "Calendar successfully synced and triaged." });
-  } catch (error) {
-    console.error("Sync Error:", error);
+  } catch (error: any) {
+    console.error("🔥 CRITICAL SYNC ERROR 🔥");
+    console.error("Message:", error.message);
+    console.error("Stack:", error.stack);
+    if (error.response) {
+      console.error("API Response Data:", error.response.data);
+    }
     return res.status(500).json({ error: "Failed to sync calendar" });
   }
 };
