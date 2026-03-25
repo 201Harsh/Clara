@@ -37,7 +37,6 @@ export const RegisterAndLoginUsingGoogle = async (
 
 export const RefreshAccessToken = async (req: Request, res: Response) => {
   try {
-    // Make sure cookie-parser is installed and configured in your main Express app!
     const refreshToken = req.cookies?.clara_refresh;
 
     if (!refreshToken) {
@@ -57,11 +56,11 @@ export const RefreshAccessToken = async (req: Request, res: Response) => {
       return res.status(403).json({ error: "Forbidden. User not found." });
     }
 
-    // Issue a fresh 15-minute Access Token
+    // FIXED: Casting the options block to 'any' resolves the TS overload error
     const newAccessToken = jwt.sign(
       { userId: user._id },
       process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" },
+      { expiresIn: (process.env.ACCESS_TOKEN_EXPIRY || "15m") as any },
     );
 
     return res.status(200).json({ accessToken: newAccessToken });

@@ -4,14 +4,16 @@ import UserModel from "../models/user-model.js";
 import { getTodaysMeetings } from "../services/calendar.service.js";
 import { triageMeetings } from "../main/clara-ai.js";
 
-interface AuthRequest extends Request {
-  user?: { userId: string };
-}
-
 // 1. Fetch from DB for the UI
-export const GetDailyMeetings = async (req: AuthRequest, res: Response) => {
+export const GetDailyMeetings = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    // FIXED: Safely cast req.user inside the function
+    const userPayload = req.user as { userId: string } | undefined;
+    const userId = userPayload?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     // Get start and end of today
     const start = new Date();
@@ -31,16 +33,21 @@ export const GetDailyMeetings = async (req: AuthRequest, res: Response) => {
 };
 
 // 2. Force Sync with Google & Run AI Triage
-export const SyncCalendar = async (req: AuthRequest, res: Response) => {
+export const SyncCalendar = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userPayload = req.user as { userId: string } | undefined;
+    const userId = userPayload?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const user = await UserModel.findById(userId);
 
     if (!user?.googleAccessToken || !user?.googleRefreshToken) {
       return res.status(400).json({ error: "Google Calendar not connected." });
     }
 
-    // Fetch raw schedule
     const rawMeetings = await getTodaysMeetings(
       user.googleAccessToken,
       user.googleRefreshToken,
@@ -50,13 +57,10 @@ export const SyncCalendar = async (req: AuthRequest, res: Response) => {
       return res.status(200).json({ message: "No meetings today." });
     }
 
-    // Run Llama 3.3 Triage
     const userRole = req.body.role || "Professional";
     const decisions = await triageMeetings(rawMeetings, userRole);
 
-    // Upsert to Database (Creates new, updates existing)
     const bulkOps = rawMeetings.map((meeting: any) => {
-      // Find the AI's decision for this specific meeting
       const triageData = decisions.find((d: any) => d.id === meeting.id) || {
         decision: "human",
         reason: "Fallback: Unclassified",
@@ -64,7 +68,8 @@ export const SyncCalendar = async (req: AuthRequest, res: Response) => {
 
       return {
         updateOne: {
-          filter: { userId, googleEventId: meeting.id },
+          // FIXED: Explicitly cast userId to string so TS knows it is not undefined
+          filter: { userId: userId as string, googleEventId: meeting.id },
           update: {
             $set: {
               title: meeting.title,
@@ -75,12 +80,13 @@ export const SyncCalendar = async (req: AuthRequest, res: Response) => {
               reason: triageData.reason,
             },
           },
-          upsert: true, // Creates the document if it doesn't exist!
+          upsert: true,
         },
       };
     });
 
-    await CalendarEventModel.bulkWrite(bulkOps);
+    // FIXED: Cast bulkOps to 'any' to bypass hyper-strict Mongoose schema typing
+    await CalendarEventModel.bulkWrite(bulkOps as any);
 
     return res
       .status(200)
