@@ -1,8 +1,11 @@
+import Clara from "./Landing/Clara";
 
 const page = () => {
   return (
-    <div>page</div>
-  )
-}
+    <>
+      <Clara />
+    </>
+  );
+};
 
-export default page
+export default page;
