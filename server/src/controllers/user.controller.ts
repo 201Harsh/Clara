@@ -23,7 +23,7 @@ export const RegisterAndLoginUsingGoogle = async (
     setRefreshCookie(res, tokens.refreshToken);
 
     return res.redirect(
-      `${process.env.CLIENT_SIDE_URL}/?token=${tokens.accessToken}`,
+      `${process.env.CLIENT_SIDE_URL}/dashboard?token=${tokens.accessToken}`,
     );
   } catch (error) {
     console.error("Google Auth Error:", error);

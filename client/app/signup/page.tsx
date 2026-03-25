@@ -1,10 +1,26 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ShieldCheck, CalendarClock, Lock } from "lucide-react";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShieldCheck, CalendarClock, Lock, AlertTriangle } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 
-export default function SignupPage() {
+function SignupContent() {
+  const searchParams = useSearchParams();
+  const errorType = searchParams.get("error");
+
+  const getErrorMessage = (code: string) => {
+    switch (code) {
+      case "AuthFailed":
+        return "Authentication protocol failed. Please verify your Google credentials.";
+      case "NoUser":
+        return "System unable to extract profile data. Please try again.";
+      default:
+        return "An unexpected terminal error occurred. Please reboot connection.";
+    }
+  };
+
   const handleGoogleLogin = () => {
     try {
       window.location.href = `${process.env.NEXT_PUBLIC_SERVER_URL}/users/google`;
@@ -27,7 +43,7 @@ export default function SignupPage() {
         <div className="bg-[#05000a]/80 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-8 shadow-[0_0_40px_rgba(147,51,234,0.15)] overflow-hidden relative">
           <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-purple-400 to-transparent opacity-50" />
 
-          <div className="text-center mb-10">
+          <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -44,6 +60,28 @@ export default function SignupPage() {
             </p>
           </div>
 
+          <AnimatePresence>
+            {errorType && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3 shadow-[0_0_20px_rgba(239,68,68,0.1)]">
+                  <AlertTriangle
+                    className="text-red-400 shrink-0 mt-0.5"
+                    size={18}
+                  />
+                  <p className="text-sm font-medium text-red-300">
+                    {getErrorMessage(errorType)}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="space-y-4 mb-8">
             <div className="flex items-center gap-3 text-sm text-zinc-300 bg-white/5 p-3 rounded-lg border border-white/5">
               <CalendarClock size={18} className="text-purple-400 shrink-0" />
@@ -57,12 +95,13 @@ export default function SignupPage() {
 
           <button
             onClick={handleGoogleLogin}
-            className="cursor-pointer w-full group relative flex items-center justify-center gap-3 bg-white text-black font-semibold text-lg py-4 px-6 rounded-xl hover:bg-zinc-200 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+            className="cursor-pointer w-full group relative flex items-center justify-center gap-3 bg-white text-black font-semibold text-lg py-4 px-6 rounded-xl hover:bg-zinc-200 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)]"
           >
             <FcGoogle size={24} />
             <span>Continue with Google</span>
           </button>
 
+          {/* Footer Terms */}
           <p className="text-center text-xs text-zinc-500 mt-6">
             By connecting, you authorize Clara to join designated meetings on
             your behalf.
@@ -70,5 +109,13 @@ export default function SignupPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <SignupContent />
+    </Suspense>
   );
 }
