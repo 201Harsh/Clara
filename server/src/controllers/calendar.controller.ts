@@ -65,15 +65,37 @@ export const SyncCalendar = async (
       return res.status(200).json({ message: "No meetings today." });
     }
 
-    // THE FIX: Optional chaining safely handles an empty Axios POST request
     const userRole = req.body?.role || "Professional";
 
-    const decisions = await triageMeetings(rawMeetings, userRole);
+    // Attempt the AI Triage
+    let decisions: any[] = [];
+    try {
+      const aiResult = await triageMeetings(rawMeetings, userRole);
+
+      // CRITICAL FIX: Ensure aiResult is an array.
+      // Sometimes LLMs return { triage: [...] } instead of just [...]
+      if (Array.isArray(aiResult)) {
+        decisions = aiResult;
+      } else if (aiResult && Array.isArray(aiResult.triage)) {
+        decisions = aiResult.triage;
+      } else if (aiResult && Array.isArray(aiResult.meetings)) {
+        decisions = aiResult.meetings;
+      } else {
+        console.warn(
+          "AI returned malformed data, falling back to empty array.",
+          aiResult,
+        );
+      }
+    } catch (aiError) {
+      console.error("AI Triage Failed:", aiError);
+      // We don't crash the whole sync if the AI fails, we just fall back
+    }
 
     const bulkOps = rawMeetings.map((meeting: any) => {
+      // Now decisions is guaranteed to be an array, so .find() will not crash
       const triageData = decisions.find((d: any) => d.id === meeting.id) || {
-        decision: "human",
-        reason: "Fallback: Unclassified",
+        decision: "human", // Default to human if AI failed to classify
+        reason: "Fallback: AI classification failed or was unclassified.",
       };
 
       return {
@@ -99,7 +121,7 @@ export const SyncCalendar = async (
       .status(200)
       .json({ message: "Calendar successfully synced and triaged." });
   } catch (error: any) {
-    console.error("Sync Error:", error);
+    console.error("Sync Error:", error.message);
     return res.status(500).json({ error: "Failed to sync calendar" });
   }
 };
