@@ -75,7 +75,7 @@ export default function DashboardPage() {
     show: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
 
-  const itemVars = {
+  const itemVars : any = {
     hidden: { opacity: 0, y: 20 },
     show: {
       opacity: 1,
