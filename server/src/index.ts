@@ -1,5 +1,6 @@
 import app from "./app.js";
 import http from "http";
+import "../src/config/dotenv.js";
 
 const server = http.createServer(app);
 
