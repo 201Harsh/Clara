@@ -10,6 +10,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/users", userRouter);
 app.use("/ai", aiRouter);
-app.use("/calendat", calendarRouter);
+app.use("/calendar", calendarRouter);
 
 export default app;
