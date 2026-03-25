@@ -17,11 +17,7 @@ export const RegisterAndLoginUsingGoogle = async (
       return res.redirect(`${process.env.CLIENT_SIDE_URL}/signup?error=NoUser`);
     }
 
-    const token = user.JwtGenToken();
-
-    const nextJsApiUrl = `${process.env.CLIENT_SIDE_URL}/api/auth`;
-
-    return res.redirect(`${nextJsApiUrl}?token=${token}`);
+    
   } catch (error) {
     console.log(error);
     return res.redirect(

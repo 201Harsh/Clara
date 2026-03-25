@@ -21,6 +21,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.2",
     "node-cron": "^4.2.1",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "puppeteer": "^24.40.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
@@ -32,6 +34,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.0",
     "@types/node-cron": "^3.0.11",
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
