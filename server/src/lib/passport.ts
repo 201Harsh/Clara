@@ -40,11 +40,17 @@ passport.use(
         let user = await UserModel.findOne({ email });
 
         if (user) {
-          if (!user.googleId) {
-            user.googleId = googleId;
-            await user.save();
+          user.googleAccessToken = accessToken;
+
+          if (refreshToken) {
+            user.googleRefreshToken = refreshToken;
           }
 
+          if (!user.googleId) {
+            user.googleId = googleId;
+          }
+
+          await user.save();
           return done(null, user);
         }
 
@@ -52,6 +58,8 @@ passport.use(
           name: profile.displayName,
           email,
           googleId,
+          googleAccessToken: accessToken,
+          googleRefreshToken: refreshToken,
         });
 
         return done(null, newUser);

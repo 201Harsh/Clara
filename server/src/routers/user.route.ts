@@ -8,7 +8,12 @@ userRouter.get(
   "/google",
   passport.authenticate("google", {
     session: false,
-    scope: ["profile", "email"],
+    accessType: "offline",
+    scope: [
+      "profile",
+      "email",
+      "https://www.googleapis.com/auth/calendar.readonly",
+    ],
   }),
 );
 

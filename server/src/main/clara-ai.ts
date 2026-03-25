@@ -2,27 +2,32 @@ import Groq from "groq-sdk";
 
 const groq = new Groq();
 
-export async function clara({ prompt }: { prompt: string }) {
-  const completion = await getGroqChatCompletion({ prompt });
-  const response = completion.choices[0]?.message?.content || "";
-  console.log(response);
-  return response;
-}
+export async function triageMeetings(meetingsData: any, userRole: string) {
+  const systemPrompt = `
+    You are Clara, an elite autonomous personal assistant. 
+    Your user's role is: ${userRole}.
+    Analyze the following daily meeting schedule. Determine which meetings the user MUST attend in person, and which meetings are "Listen Only" where you (the bot) should attend as a proxy to take notes.
+    
+    Rules:
+    - 1-on-1s, client pitches, or performance reviews = "human"
+    - Weekly syncs, all-hands, or general updates = "bot"
+    
+    Respond ONLY with a valid JSON array of objects, like this:
+    [
+      { "id": "meeting_id", "title": "meeting_name", "decision": "bot", "reason": "General weekly sync." },
+      { "id": "meeting_id", "title": "meeting_name", "decision": "human", "reason": "1-on-1 requires personal presence." }
+    ]
+  `;
 
-export const getGroqChatCompletion = async ({ prompt } : { prompt: string }) => {
-  return groq.chat.completions.create({
+  const completion = await groq.chat.completions.create({
     messages: [
-      {
-        role: "system",
-        content: "You are a helpful assistant.",
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
+      { role: "system", content: systemPrompt },
+      { role: "user", content: JSON.stringify(meetingsData) },
     ],
     model: "llama-3.1-8b-instant",
+    response_format: { type: "json_object" },
   });
-};
 
-export default clara;
+  const response = completion.choices[0]?.message?.content || "[]";
+  return JSON.parse(response);
+}
