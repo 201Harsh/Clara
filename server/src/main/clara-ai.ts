@@ -24,7 +24,7 @@ export async function triageMeetings(meetingsData: any, userRole: string) {
       { role: "system", content: systemPrompt },
       { role: "user", content: JSON.stringify(meetingsData) },
     ],
-    model: "llama-3.1-8b-instant",
+    model: "llama-3.3-70b-versatile",
     response_format: { type: "json_object" },
   });
 
