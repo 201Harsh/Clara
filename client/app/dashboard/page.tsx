@@ -18,6 +18,11 @@ import {
   Megaphone,
   ChevronDown,
   LogOut,
+  PenTool,
+  TrendingUp,
+  Target,
+  Database,
+  Activity,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 import { LuMessageSquareText } from "react-icons/lu";
@@ -46,23 +51,48 @@ const ROLES = [
   {
     id: "Software Engineer",
     icon: <Code size={24} />,
-    desc: "Focuses on deep work. Minimizes syncs.",
+    desc: "Deep work focus. Clara handles daily standups.",
   },
   {
     id: "Founder / CEO",
     icon: <Briefcase size={24} />,
-    desc: "High meeting load. Prioritizes 1-on-1s.",
+    desc: "High load. Clara prioritizes external pitches & 1-on-1s.",
   },
   {
-    id: "Marketing Manager",
+    id: "Product Manager",
+    icon: <Target size={24} />,
+    desc: "Alignment focus. Clara handles basic feature syncs.",
+  },
+  {
+    id: "Marketing Lead",
     icon: <Megaphone size={24} />,
-    desc: "Campaign syncs. Prioritizes strategy.",
+    desc: "Campaign focus. Clara proxies general updates.",
+  },
+  {
+    id: "Data Scientist",
+    icon: <Database size={24} />,
+    desc: "Analysis blocks. Clara summarizes weekly reports.",
+  },
+  {
+    id: "Design Lead",
+    icon: <PenTool size={24} />,
+    desc: "Creative sprints. Clara handles timeline syncs.",
+  },
+  {
+    id: "Sales Executive",
+    icon: <TrendingUp size={24} />,
+    desc: "Client focus. Clara proxies internal pipeline reviews.",
+  },
+  {
+    id: "Operations",
+    icon: <Activity size={24} />,
+    desc: "System focus. Clara handles vendor status calls.",
   },
 ];
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { logout } = useAuthStore();
+  const { setAccessToken, logout } = useAuthStore();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [meetings, setMeetings] = useState<CalendarEvent[]>([]);
@@ -74,48 +104,78 @@ export default function DashboardPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const currentUrl = new URL(window.location.href);
-      if (currentUrl.searchParams.has("token")) {
-        currentUrl.searchParams.delete("token");
-        window.history.replaceState(
-          {},
-          document.title,
-          currentUrl.pathname + currentUrl.search,
-        );
-      }
-    }
-  }, []);
+    let isMounted = true;
 
-  const initializeDashboard = async () => {
-    try {
-      setError(null);
+    const initializeApp = async () => {
       setIsLoading(true);
+      try {
+        let tokenToUse = null;
 
-      // 1. Fetch Profile
-      const profileRes = await AxiosInstance.get("/users/profile");
-      setProfile(profileRes.data.user);
+        // 1. URL & LocalStorage Token Management
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href);
+          const urlToken = url.searchParams.get("token");
 
-      // 2. Fetch Meetings
-      const { data } = await AxiosInstance.get("/calendar/today");
-      setMeetings(data.meetings);
-    } catch (err: any) {
-      console.error("Dashboard Init Error:", err);
-      // REDIRECT IF USER NOT FOUND IN DB
-      if (err.response?.status === 404) {
-        logout();
-        router.replace("/signup?error=UserNotFound");
-      } else {
-        setError("Failed to initialize dashboard context.");
+          if (urlToken) {
+            tokenToUse = urlToken;
+            localStorage.setItem("clara_access_token", urlToken);
+            url.searchParams.delete("token");
+            window.history.replaceState(
+              {},
+              document.title,
+              url.pathname + url.search,
+            );
+          } else {
+            tokenToUse = localStorage.getItem("clara_access_token");
+          }
+        }
+
+        // 2. CRITICAL FIX: Inject token directly into Axios defaults instantly
+        if (tokenToUse) {
+          setAccessToken(tokenToUse); // Sync to Zustand
+          AxiosInstance.defaults.headers.common["Authorization"] =
+            `Bearer ${tokenToUse}`;
+        } else {
+          // If absolutely no token is found anywhere, abort and redirect to login
+          throw new Error("No token found");
+        }
+
+        // 3. Fire APIs safely
+        const profileRes = await AxiosInstance.get("/users/profile");
+        if (!isMounted) return;
+        setProfile(profileRes.data.user);
+
+        const { data } = await AxiosInstance.get("/calendar/today");
+        if (!isMounted) return;
+        setMeetings(data.meetings);
+      } catch (err: any) {
+        if (!isMounted) return;
+        console.error("Dashboard Init Error:", err);
+
+        // Handle Auth Failures (401/403/404)
+        if (
+          err.message === "No token found" ||
+          err.response?.status === 401 ||
+          err.response?.status === 403 ||
+          err.response?.status === 404
+        ) {
+          localStorage.removeItem("clara_access_token");
+          logout();
+          router.replace("/signup?error=SessionExpired");
+        } else {
+          setError("Failed to initialize dashboard context.");
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
-    initializeDashboard();
-  }, []);
+    initializeApp();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setAccessToken, logout, router]);
 
   const handleRoleSelection = async (selectedRole: string) => {
     setIsLoading(true);
@@ -135,16 +195,24 @@ export default function DashboardPage() {
     try {
       const currentRole = overrideRole || profile?.role || "Professional";
       await AxiosInstance.post("/calendar/sync", { role: currentRole });
+
       const { data } = await AxiosInstance.get("/calendar/today");
       setMeetings(data.meetings);
-    } catch (err) {
-      setError("Calendar synchronization failed.");
+    } catch (err: any) {
+      console.error("Sync Error:", err);
+      // Explicitly catch the 400 error from the backend
+      if (err.response?.status === 400) {
+        setError("Google Calendar access missing. Please re-authenticate.");
+      } else {
+        setError("Calendar synchronization failed.");
+      }
     } finally {
       setIsSyncing(false);
     }
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("clara_access_token");
     logout();
     router.replace("/signup");
   };
@@ -175,9 +243,9 @@ export default function DashboardPage() {
   // --- RENDER ROLE MODAL ---
   if (!isLoading && profile && !profile.role) {
     return (
-      <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative">
+      <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative overflow-y-auto">
         <div className="absolute inset-0 bg-purple-900/10 blur-[150px] pointer-events-none" />
-        <div className="max-w-3xl w-full bg-black/60 border border-white/10 rounded-3xl p-8 md:p-12 backdrop-blur-xl relative z-10 text-center shadow-2xl">
+        <div className="max-w-4xl w-full bg-black/60 border border-white/10 rounded-3xl p-8 md:p-12 backdrop-blur-xl relative z-10 text-center shadow-2xl my-12">
           <Bot size={48} className="text-purple-500 mx-auto mb-6" />
           <h1 className="text-3xl font-bold text-white mb-3">
             Initialize Protocol
@@ -186,18 +254,20 @@ export default function DashboardPage() {
             Select your operational role. This determines how Clara evaluates
             and triages your daily schedule.
           </p>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {ROLES.map((r) => (
               <button
                 key={r.id}
                 onClick={() => handleRoleSelection(r.id)}
-                className="flex flex-col items-center text-center p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all group"
+                className="flex flex-col items-center text-center p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all group"
               >
-                <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center text-purple-400 mb-4 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(147,51,234,0.1)]">
+                <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-purple-400 mb-3 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(147,51,234,0.1)]">
                   {r.icon}
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">{r.id}</h3>
-                <p className="text-xs text-zinc-500">{r.desc}</p>
+                <h3 className="text-sm font-bold text-white mb-1.5">{r.id}</h3>
+                <p className="text-[10px] text-zinc-500 leading-tight">
+                  {r.desc}
+                </p>
               </button>
             ))}
           </div>
@@ -259,7 +329,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors px-2 py-2 pr-4 rounded-full"
                 >
                   <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-white text-sm shadow-[0_0_15px_rgba(147,51,234,0.3)]">
-                    {profile.name.charAt(0)}
+                    {profile.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left hidden sm:block">
                     <p className="text-sm font-bold text-white leading-none">
@@ -312,9 +382,20 @@ export default function DashboardPage() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400 backdrop-blur-md">
-                <AlertCircle size={20} />
-                <p className="font-medium text-sm">{error}</p>
+              <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-red-400 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <AlertCircle size={20} />
+                  <p className="font-medium text-sm">{error}</p>
+                </div>
+                {/* Shows the reconnect button if Google Auth is missing */}
+                {error.includes("Google") && (
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:4000"}/auth/google`}
+                    className="bg-red-500/20 hover:bg-red-500/30 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shrink-0"
+                  >
+                    Reconnect Google
+                  </a>
+                )}
               </div>
             </motion.div>
           )}
@@ -441,7 +522,6 @@ export default function DashboardPage() {
           <LuMessageSquareText className="text-white relative z-10" size={26} />
         </motion.button>
 
-        {/* The Clara Agent Component */}
         <ClaraAgent
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}

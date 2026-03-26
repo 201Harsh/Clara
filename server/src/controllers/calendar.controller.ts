@@ -48,14 +48,15 @@ export const SyncCalendar = async (
     }
 
     const dbUser = await UserModel.findById(userId);
+    console.log(dbUser?.googleAccessToken)
 
-    if (!dbUser?.googleAccessToken || !dbUser?.googleRefreshToken) {
+    if (!dbUser?.googleAccessToken) {
       return res.status(400).json({ error: "Google Calendar not connected." });
     }
 
     const rawMeetings = await getTodaysMeetings(
       dbUser.googleAccessToken,
-      dbUser.googleRefreshToken,
+      dbUser.googleRefreshToken || "",
     );
 
     const today = new Date();

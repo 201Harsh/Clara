@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, X, Send } from "lucide-react";
-import AxiosInstance from "../config/AxiosInstance"; // Adjust path if needed
+import AxiosInstance from "../config/AxiosInstance";
 
 interface ChatbotProps {
   isOpen: boolean;
@@ -23,7 +23,6 @@ export default function ClaraAgent({
   >([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-expand textarea
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPrompt(e.target.value);
     if (textareaRef.current) {
@@ -43,18 +42,23 @@ export default function ClaraAgent({
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
+      // Hits NEXT_PUBLIC_SERVER_URL/ai/clara/triage via AxiosInstance
       const { data } = await AxiosInstance.post("/ai/clara/triage", {
         prompt: userMessage,
         role: userRole,
       });
+
       setResponses((prev) => [
         ...prev,
-        { role: "bot", text: data.message || "Protocol updated." },
+        { role: "bot", text: data.message || "Protocol updated successfully." },
       ]);
     } catch (error) {
       setResponses((prev) => [
         ...prev,
-        { role: "bot", text: "Connection failed. Please try again." },
+        {
+          role: "bot",
+          text: "Connection to AI core failed. Please try again.",
+        },
       ]);
     } finally {
       setIsLoading(false);
@@ -101,8 +105,8 @@ export default function ClaraAgent({
 
             <div className="flex-1 p-5 overflow-y-auto space-y-4 scrollbar-small">
               <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 text-sm text-purple-200">
-                Connection established. I am monitoring your schedule. How would
-                you like me to adjust the protocol?
+                Connection established. I am monitoring your schedule context.
+                How would you like me to adjust the protocol?
               </div>
 
               {responses.map((msg, i) => (

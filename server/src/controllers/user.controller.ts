@@ -16,25 +16,26 @@ export const RegisterAndLoginUsingGoogle = async (
     const user = req.user as GoogleUser;
 
     if (!user || !user._id) {
-      return res.redirect(`${process.env.CLIENT_URL}/signup?error=NoUser`);
+      return res.redirect(`${process.env.CLIENT_SIDE_URL}/signup?error=NoUser`);
     }
 
     const tokens = generateTokens(user._id.toString());
+    console.log(tokens)
+
     setRefreshCookie(res, tokens.refreshToken);
 
-    return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+    return res.redirect(
+      `${process.env.CLIENT_URL}/dashboard?token=${tokens.accessToken}`,
+    );
   } catch (error) {
     console.error("Google Auth Error:", error);
     return res.redirect(
-      `${process.env.CLIENT_URL}/signup?error=AuthFailed`,
+      `${process.env.CLIENT_SIDE_URL}/signup?error=AuthFailed`,
     );
   }
 };
 
-export const RefreshAccessToken = async (
-  req: Request,
-  res: Response,
-): Promise<any> => {
+export const RefreshAccessToken = async (req: Request, res: Response) => {
   try {
     const refreshToken = req.cookies?.clara_refresh;
 
@@ -48,6 +49,7 @@ export const RefreshAccessToken = async (
       refreshToken,
       process.env.REFRESH_TOKEN_SECRET as string,
     ) as { userId: string };
+
     const user = await UserModel.findById(decoded.userId);
 
     if (!user) {
@@ -62,6 +64,7 @@ export const RefreshAccessToken = async (
 
     return res.status(200).json({ accessToken: newAccessToken });
   } catch (error: any) {
+    console.error("Refresh Token Error:", error.message);
     return res
       .status(403)
       .json({ error: "Forbidden. Token expired or invalid." });
