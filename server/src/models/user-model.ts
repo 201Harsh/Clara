@@ -6,6 +6,7 @@ export interface IUser extends Document {
   googleId?: string | null;
   googleAccessToken?: string;
   googleRefreshToken?: string;
+  role?: string | null; // ADDED THIS
 }
 
 const UserSchema: Schema = new Schema(
@@ -15,9 +16,11 @@ const UserSchema: Schema = new Schema(
     googleId: { type: String, default: null },
     googleAccessToken: { type: String },
     googleRefreshToken: { type: String },
+    role: { type: String, default: null }, // ADDED THIS
   },
   { timestamps: true },
 );
 
 const UserModel = mongoose.model<IUser>("User", UserSchema);
+
 export default UserModel;
