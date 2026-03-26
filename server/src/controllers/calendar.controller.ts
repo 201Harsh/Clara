@@ -63,7 +63,6 @@ export const SyncCalendar = async (
     today.setHours(0, 0, 0, 0);
 
     if (!rawMeetings || rawMeetings.length === 0) {
-      // If no meetings, clear the array for today
       await CalendarEventModel.findOneAndUpdate(
         { userId, date: today },
         { $set: { meetings: [] } },
@@ -88,7 +87,6 @@ export const SyncCalendar = async (
       console.error("AI Triage Failed:", aiError);
     }
 
-    // Build the array
     const meetingsArray = rawMeetings.map((meeting: any) => {
       const triageData = decisions.find((d: any) => d.id === meeting.id) || {
         decision: "human",
@@ -107,7 +105,6 @@ export const SyncCalendar = async (
       };
     });
 
-    // Save the array into a single document
     await CalendarEventModel.findOneAndUpdate(
       { userId, date: today },
       { $set: { meetings: meetingsArray } },
