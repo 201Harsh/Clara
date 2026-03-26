@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, X, Send } from "lucide-react";
-import AxiosInstance from "../config/AxiosInstance";
+import AxiosInstance from "../config/AxiosInstance"; // Adjust path if needed
 
 interface ChatbotProps {
   isOpen: boolean;
@@ -11,7 +11,11 @@ interface ChatbotProps {
   userRole: string | null;
 }
 
-export default function ClaraAgent({ isOpen, onClose, userRole }: ChatbotProps) {
+export default function ClaraAgent({
+  isOpen,
+  onClose,
+  userRole,
+}: ChatbotProps) {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [responses, setResponses] = useState<
@@ -36,7 +40,6 @@ export default function ClaraAgent({ isOpen, onClose, userRole }: ChatbotProps) 
     setPrompt("");
     setIsLoading(true);
 
-    // Reset textarea height
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
@@ -96,7 +99,7 @@ export default function ClaraAgent({ isOpen, onClose, userRole }: ChatbotProps) 
               </button>
             </div>
 
-            <div className="flex-1 p-5 overflow-y-auto space-y-4">
+            <div className="flex-1 p-5 overflow-y-auto space-y-4 scrollbar-small">
               <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 text-sm text-purple-200">
                 Connection established. I am monitoring your schedule. How would
                 you like me to adjust the protocol?
@@ -145,7 +148,7 @@ export default function ClaraAgent({ isOpen, onClose, userRole }: ChatbotProps) 
                     }
                   }}
                   placeholder="Message Clara..."
-                  className="w-full bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none resize-none max-h-[150px] min-h-[24px] py-2 pl-3"
+                  className="w-full scrollbar-small bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none resize-none max-h-[150px] min-h-[24px] py-2 pl-3"
                   rows={1}
                 />
                 <button

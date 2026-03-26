@@ -1,6 +1,7 @@
 import { Router } from "express";
 import passport from "../lib/passport.js";
-import { RefreshAccessToken, RegisterAndLoginUsingGoogle } from "../controllers/user.controller.js";
+import { GetProfile, RefreshAccessToken, RegisterAndLoginUsingGoogle, UpdateRole } from "../controllers/user.controller.js";
+import { AuthMiddleware } from "../middlewares/auth-middleware.js";
 
 const userRouter = <Router>Router();
 
@@ -27,5 +28,8 @@ userRouter.get(
 );
 
 userRouter.get("/refresh", RefreshAccessToken);
+
+userRouter.get("/profile", AuthMiddleware, GetProfile);
+userRouter.put("/role", AuthMiddleware, UpdateRole);
 
 export default userRouter;

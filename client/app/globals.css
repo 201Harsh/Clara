@@ -5,3 +5,8 @@
     transform: translateX(100%) rotate(-45deg);
   }
 }
+
+.scrollbar-small {
+  scrollbar-color: #9b9b9b transparent;
+  scrollbar-width: auto;
+}
