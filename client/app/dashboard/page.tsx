@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCw,
   Calendar as CalendarIcon,
   Clock,
-  Video,
   User,
   Bot,
   AlertCircle,
@@ -276,17 +275,15 @@ export default function DashboardPage() {
     );
   }
 
-  // --- MAIN DASHBOARD ---
   return (
     <div className="min-h-screen bg-[#020005] text-zinc-100 p-6 md:p-10 relative overflow-hidden font-sans">
-      <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-emerald-900/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="fixed top-[-20%] right-[-10%] w-200 h-200 bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] left-[-10%] w-150 h-150 bg-emerald-900/5 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10">
-        {/* HEADER WITH DROPDOWN */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b border-white/5 pb-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-transparent border border-purple-500/30 flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.15)] backdrop-blur-md">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-purple-500/20 to-transparent border border-purple-500/30 flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.15)] backdrop-blur-md">
               <CalendarIcon className="text-purple-400" size={24} />
             </div>
             <div>
@@ -387,7 +384,6 @@ export default function DashboardPage() {
                   <AlertCircle size={20} />
                   <p className="font-medium text-sm">{error}</p>
                 </div>
-                {/* Shows the reconnect button if Google Auth is missing */}
                 {error.includes("Google") && (
                   <a
                     href={`${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:4000"}/auth/google`}
@@ -413,7 +409,7 @@ export default function DashboardPage() {
             {meetings.length === 0 ? (
               <motion.div
                 variants={itemVars}
-                className="py-24 text-center border border-white/5 rounded-3xl bg-white/[0.02] backdrop-blur-sm"
+                className="py-24 text-center border border-white/5 rounded-3xl bg-white/2 backdrop-blur-sm"
               >
                 <CheckCircle2
                   size={48}
@@ -516,7 +512,7 @@ export default function DashboardPage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsChatOpen(true)}
-          className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center shadow-[0_0_40px_rgba(147,51,234,0.5)] border border-purple-400/30 z-40 group"
+          className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-linear-to-br from-purple-600 to-indigo-700 flex items-center justify-center shadow-[0_0_40px_rgba(147,51,234,0.5)] border border-purple-400/30 z-40 group"
         >
           <span className="absolute inset-0 rounded-full bg-purple-400 opacity-0 group-hover:opacity-20 group-hover:animate-ping transition-opacity" />
           <LuMessageSquareText className="text-white relative z-10" size={26} />

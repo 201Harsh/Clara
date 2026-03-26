@@ -1,51 +1,49 @@
 import { Request, Response } from "express";
-import { triageMeetings } from "../main/clara-ai.js";
-import CalendarEventModel from "../models/calendar-model.js";
+import { getTodaysMeetings } from "../services/calendar.service.js";
+import { triageMeetings } from "../main/meeting-adjustor.js";
+import UserModel from "../models/user-model.js";
 
-export const TriageMeetings = async (
-  req: Request,
-  res: Response,
-): Promise<any> => {
+export const TriageMeetings = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
-    const userId = user?.userId || user?.id || user?._id;
+    const userPayload = req.user as { userId: string } | undefined;
+    const userId = userPayload?.userId;
 
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const user = await UserModel.findById(userId);
 
-    const record = await CalendarEventModel.findOne({
-      userId,
-      date: today,
-    });
-
-    if (!record || !record.meetings || record.meetings.length === 0) {
-      return res
-        .status(200)
-        .json({ message: "No meetings found in database for today." });
+    if (!user || !user.googleAccessToken || !user.googleRefreshToken) {
+      return res.status(400).json({
+        error:
+          "Google Calendar not connected. Please authenticate with Google.",
+      });
     }
 
-    const formattedMeetings = record.meetings.map((m: any) => ({
-      id: m.googleEventId,
-      title: m.title,
-      startTime: m.startTime,
-      endTime: m.endTime,
-    }));
+    const meetings = await getTodaysMeetings(
+      user.googleAccessToken,
+      user.googleRefreshToken,
+    );
 
-    const userRole = req.body?.role || "";
-    const aiResponse = await triageMeetings(formattedMeetings, userRole);
+    if (!meetings || meetings.length === 0) {
+      return res.status(200).json({
+        message: "No meetings scheduled for today. Clara is standing by.",
+      });
+    }
+
+    const userRole = req.body.role || "Software Engineer";
+    const decisions = await triageMeetings(meetings, userRole);
 
     return res.status(200).json({
       message: "Meetings successfully triaged",
-      triage: aiResponse.triage || [],
+      triage: decisions,
+      rawSchedule: meetings,
     });
   } catch (error) {
     console.error("Clara Triage Error:", error);
-    return res
-      .status(500)
-      .json({ error: "Internal server error while processing AI data" });
+    return res.status(500).json({
+      error: "Internal server error while processing calendar data",
+    });
   }
 };
