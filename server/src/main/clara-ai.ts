@@ -6,6 +6,7 @@ export async function triageMeetings(meetingsData: any, userRole: string) {
   const systemPrompt = `
     You are Clara, an elite autonomous personal assistant. 
     Your user's role is: ${userRole}.
+    Exact time is ${new Date().toLocaleString()}
     Analyze the following daily meeting schedule. Determine which meetings the user MUST attend in person, and which meetings are "Listen Only" where you (the bot) should attend as a proxy to take notes.
     
     Rules:
@@ -27,7 +28,7 @@ export async function triageMeetings(meetingsData: any, userRole: string) {
       { role: "user", content: JSON.stringify(meetingsData) },
     ],
     model: "llama-3.3-70b-versatile",
-    response_format: { type: "json_object" }, // This requires the output to be an object, not a raw array
+    response_format: { type: "json_object" },
   });
 
   const response = completion.choices[0]?.message?.content || '{"triage": []}';

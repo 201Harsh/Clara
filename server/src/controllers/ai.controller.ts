@@ -7,7 +7,6 @@ export const TriageMeetings = async (
   res: Response,
 ): Promise<any> => {
   try {
-    // Bypassing strict types to ensure we grab the ID correctly
     const user = (req as any).user;
     const userId = user?.userId || user?.id || user?._id;
 
@@ -15,24 +14,20 @@ export const TriageMeetings = async (
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // Read directly from the database using the new Array-based schema
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Find the single document for today
     const record = await CalendarEventModel.findOne({
       userId,
       date: today,
     });
 
-    // Check if the record exists and has meetings inside its array
     if (!record || !record.meetings || record.meetings.length === 0) {
       return res
         .status(200)
         .json({ message: "No meetings found in database for today." });
     }
 
-    // Formatting for the AI (mapping over the embedded array!)
     const formattedMeetings = record.meetings.map((m: any) => ({
       id: m.googleEventId,
       title: m.title,
