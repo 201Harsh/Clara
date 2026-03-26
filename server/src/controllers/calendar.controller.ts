@@ -1,123 +1,35 @@
-import { Request, Response } from "express";
-import CalendarEventModel from "../models/calendar-model.js";
-import UserModel from "../models/user-model.js";
-import { getTodaysMeetings } from "../services/calendar.service.js";
-import { triageMeetings } from "../main/clara-ai.js";
+import Groq from "groq-sdk";
 
-export const GetDailyMeetings = async (
-  req: Request,
-  res: Response,
-): Promise<any> => {
-  try {
-    const user = (req as any).user;
-    const userId = user?.userId || user?.id || user?._id;
+const groq = new Groq();
 
-    if (!userId) {
-      return res
-        .status(401)
-        .json({ error: "Unauthorized. Missing User ID in token." });
-    }
-
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-
-    const meetings = await CalendarEventModel.find({
-      userId,
-      startTime: { $gte: start, $lte: end },
-    }).sort({ startTime: 1 });
-
-    return res.status(200).json({ meetings });
-  } catch (error: any) {
-    return res.status(500).json({
-      error: error.message,
-    });
-  }
-};
-
-export const SyncCalendar = async (
-  req: Request,
-  res: Response,
-): Promise<any> => {
-  try {
-    const user = (req as any).user;
-    const userId = user?.userId || user?.id || user?._id;
-
-    if (!userId) {
-      return res
-        .status(401)
-        .json({ error: "Unauthorized. Missing User ID in token." });
-    }
-
-    const dbUser = await UserModel.findById(userId);
-
-    if (!dbUser?.googleAccessToken || !dbUser?.googleRefreshToken) {
-      return res.status(400).json({ error: "Google Calendar not connected." });
-    }
-
-    const rawMeetings = await getTodaysMeetings(
-      dbUser.googleAccessToken,
-      dbUser.googleRefreshToken,
-    );
-
-    if (!rawMeetings || rawMeetings.length === 0) {
-      return res.status(200).json({ message: "No meetings today." });
-    }
-
-    const userRole = req.body?.role || "Professional";
-
-    let decisions: any[] = [];
-    try {
-      const aiResult = await triageMeetings(rawMeetings, userRole);
-
+export async function triageMeetings(meetingsData: any, userRole: string) {
+  const systemPrompt = `
+    You are Clara, an elite autonomous personal assistant. 
+    Your user's role is: ${userRole}.
+    Analyze the following daily meeting schedule. Determine which meetings the user MUST attend in person, and which meetings are "Listen Only" where you (the bot) should attend as a proxy to take notes.
     
-      if (Array.isArray(aiResult)) {
-        decisions = aiResult;
-      } else if (aiResult && Array.isArray(aiResult.triage)) {
-        decisions = aiResult.triage;
-      } else if (aiResult && Array.isArray(aiResult.meetings)) {
-        decisions = aiResult.meetings;
-      } else {
-        console.warn(
-          "AI returned malformed data, falling back to empty array.",
-          aiResult,
-        );
-      }
-    } catch (aiError) {
-      console.error("AI Triage Failed:", aiError);
+    Rules:
+    - 1-on-1s, client pitches, or performance reviews = "human"
+    - Weekly syncs, all-hands, or general updates = "bot"
+    
+    CRITICAL: You MUST respond with a valid JSON object containing a "triage" array, like this:
+    {
+      "triage": [
+        { "id": "meeting_id", "title": "meeting_name", "decision": "bot", "reason": "General weekly sync." },
+        { "id": "meeting_id", "title": "meeting_name", "decision": "human", "reason": "1-on-1 requires personal presence." }
+      ]
     }
+  `;
 
-    const bulkOps = rawMeetings.map((meeting: any) => {
-      const triageData = decisions.find((d: any) => d.id === meeting.id) || {
-        decision: "human",
-        reason: "Fallback: AI classification failed or was unclassified.",
-      };
+  const completion = await groq.chat.completions.create({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: JSON.stringify(meetingsData) },
+    ],
+    model: "llama-3.3-70b-versatile",
+    response_format: { type: "json_object" }, // This requires the output to be an object, not a raw array
+  });
 
-      return {
-        updateOne: {
-          filter: { userId: userId as string, googleEventId: meeting.id },
-          update: {
-            $set: {
-              title: meeting.title,
-              startTime: meeting.startTime,
-              endTime: meeting.endTime,
-              meetLink: meeting.link,
-              decision: triageData.decision,
-              reason: triageData.reason,
-            },
-          },
-          upsert: true,
-        },
-      };
-    });
-
-    await CalendarEventModel.bulkWrite(bulkOps as any);
-    return res
-      .status(200)
-      .json({ message: "Calendar successfully synced and triaged." });
-  } catch (error: any) {
-    console.error("Sync Error:", error.message);
-    return res.status(500).json({ error: "Failed to sync calendar" });
-  }
-};
+  const response = completion.choices[0]?.message?.content || '{"triage": []}';
+  return JSON.parse(response);
+}

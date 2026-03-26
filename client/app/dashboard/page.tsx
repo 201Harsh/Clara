@@ -14,6 +14,7 @@ import {
   AlignLeft,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
+import { LuMessageSquareText } from "react-icons/lu";
 
 interface CalendarEvent {
   _id: string;
@@ -46,7 +47,6 @@ export default function DashboardPage() {
     }
   };
 
-  // THE FIX: Unconditionally fire the fetch. The Layout already guarantees we are authenticated.
   useEffect(() => {
     fetchMeetings();
   }, []);
@@ -75,34 +75,36 @@ export default function DashboardPage() {
 
   const containerVars = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+    show: { opacity: 1, transition: { staggerChildren: 0.15 } },
   };
 
   const itemVars: any = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, x: -20 },
     show: {
       opacity: 1,
-      y: 0,
+      x: 0,
       transition: { type: "spring", stiffness: 300, damping: 24 },
     },
   };
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 p-6 md:p-12 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[150px] pointer-events-none" />
+    <div className="min-h-screen bg-[#020005] text-zinc-100 p-6 md:p-12 relative overflow-hidden font-sans">
+      {/* Deep Background Glows */}
+      <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-emerald-900/5 rounded-full blur-[150px] pointer-events-none" />
 
-      <div className="max-w-5xl mx-auto relative z-10">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-zinc-900 pb-6">
+      <div className="max-w-4xl mx-auto relative z-10">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16 border-b border-white/5 pb-8">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(147,51,234,0.15)]">
-                <CalendarIcon className="text-purple-400" size={20} />
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-transparent border border-purple-500/30 flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.15)] backdrop-blur-md">
+                <CalendarIcon className="text-purple-400" size={24} />
               </div>
-              <h1 className="text-3xl font-bold tracking-tight text-white">
-                Today's Triage
+              <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500">
+                Daily Directive
               </h1>
             </div>
-            <p className="text-zinc-400 ml-13">
+            <p className="text-zinc-500 ml-16 font-medium tracking-wide uppercase text-sm">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "long",
@@ -114,10 +116,15 @@ export default function DashboardPage() {
           <button
             onClick={handleSync}
             disabled={isSyncing || isLoading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0a051e] border border-purple-500/30 text-purple-300 hover:bg-purple-500/10 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+            className="group flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 hover:border-purple-500/50 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none backdrop-blur-sm"
           >
-            <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
-            {isSyncing ? "Scanning Calendar..." : "Rescan Calendar"}
+            <RefreshCw
+              size={18}
+              className={`${isSyncing ? "animate-spin text-purple-400" : "group-hover:text-purple-400 transition-colors"}`}
+            />
+            <span className="font-semibold">
+              {isSyncing ? "Syncing Uplink..." : "Force Sync"}
+            </span>
           </button>
         </header>
 
@@ -128,19 +135,19 @@ export default function DashboardPage() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <div className="mb-8 p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center gap-3 text-red-400">
-                <AlertCircle size={20} />
-                <p className="font-medium text-sm">{error}</p>
+              <div className="mb-10 p-5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-4 text-red-400 backdrop-blur-md">
+                <AlertCircle size={22} className="mt-0.5 shrink-0" />
+                <p className="font-medium">{error}</p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-zinc-500">
-            <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4" />
-            <p className="font-mono text-sm tracking-widest animate-pulse text-purple-400/70">
-              LOADING SCHEDULER...
+          <div className="py-32 flex flex-col items-center justify-center text-zinc-500">
+            <div className="w-10 h-10 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-6 shadow-[0_0_30px_rgba(147,51,234,0.3)]" />
+            <p className="font-mono text-xs tracking-[0.3em] text-purple-400/70">
+              INITIALIZING TIMELINE...
             </p>
           </div>
         ) : (
@@ -148,99 +155,139 @@ export default function DashboardPage() {
             variants={containerVars}
             initial="hidden"
             animate="show"
-            className="grid gap-4"
+            className="relative"
           >
+            {/* Timeline Line */}
+            {meetings.length > 0 && (
+              <div className="absolute left-6 top-8 bottom-8 w-px bg-gradient-to-b from-purple-500/50 via-white/10 to-transparent hidden md:block" />
+            )}
+
             {meetings.length === 0 ? (
               <motion.div
                 variants={itemVars}
-                className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/50"
+                className="py-24 text-center border border-white/5 rounded-3xl bg-white/[0.02] backdrop-blur-sm"
               >
                 <CheckCircle2
-                  size={40}
-                  className="mx-auto text-zinc-700 mb-4"
+                  size={48}
+                  className="mx-auto text-zinc-600 mb-6"
                 />
-                <h3 className="text-xl font-medium text-zinc-300 mb-2">
+                <h3 className="text-2xl font-bold text-zinc-200 mb-3">
                   Schedule Cleared
                 </h3>
-                <p className="text-zinc-500">
-                  No meetings found for today. Clara is standing by.
+                <p className="text-zinc-500 font-medium">
+                  No active directives for today. Clara is standing by.
                 </p>
               </motion.div>
             ) : (
-              meetings.map((meeting) => (
-                <motion.div
-                  key={meeting._id}
-                  variants={itemVars}
-                  className={`relative overflow-hidden rounded-xl p-6 border backdrop-blur-sm transition-all hover:shadow-lg ${
-                    meeting.decision === "bot"
-                      ? "bg-[#0a0314] border-purple-500/30 shadow-[0_0_20px_rgba(147,51,234,0.05)]"
-                      : "bg-[#021108] border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.05)]"
-                  }`}
-                >
-                  <div
-                    className={`absolute left-0 top-0 bottom-0 w-1 ${meeting.decision === "bot" ? "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]" : "bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.8)]"}`}
-                  />
-
-                  <div className="flex flex-col md:flex-row justify-between gap-6 ml-2">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-white mb-2">
-                        {meeting.title}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400 mb-4">
-                        <span className="flex items-center gap-1.5">
-                          <Clock size={16} /> {formatTime(meeting.startTime)} -{" "}
-                          {formatTime(meeting.endTime)}
-                        </span>
-                        {meeting.meetLink && (
-                          <a
-                            href={meeting.meetLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors"
-                          >
-                            <Video size={16} /> External Link
-                          </a>
-                        )}
-                      </div>
-
-                      <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                        <div className="flex items-center gap-2 text-zinc-300 text-sm font-medium mb-1">
-                          <AlignLeft size={14} /> Description / AI Note
-                        </div>
-                        <p className="text-sm text-zinc-500">
-                          {meeting.reason}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col md:items-end justify-start min-w-[200px]">
-                      <div className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2">
-                        Attending Status
-                      </div>
+              <div className="space-y-6">
+                {meetings.map((meeting) => {
+                  const isBot = meeting.decision === "bot";
+                  return (
+                    <motion.div
+                      key={meeting._id}
+                      variants={itemVars}
+                      className="relative md:pl-16"
+                    >
+                      {/* Timeline Dot */}
                       <div
-                        className={`inline-flex w-full md:w-auto items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold border ${
-                          meeting.decision === "bot"
-                            ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
-                            : "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                        className={`absolute left-[21px] top-8 w-3 h-3 rounded-full hidden md:block shadow-[0_0_15px_currentColor] border-2 border-black ${isBot ? "bg-purple-500 text-purple-500" : "bg-emerald-500 text-emerald-500"}`}
+                      />
+
+                      <div
+                        className={`group relative overflow-hidden rounded-2xl p-6 border transition-all duration-300 hover:-translate-y-1 ${
+                          isBot
+                            ? "bg-purple-950/10 border-purple-500/20 hover:border-purple-500/40 hover:shadow-[0_10px_40px_-10px_rgba(147,51,234,0.2)]"
+                            : "bg-emerald-950/5 border-emerald-500/20 hover:border-emerald-500/40 hover:shadow-[0_10px_40px_-10px_rgba(16,185,129,0.15)]"
                         }`}
                       >
-                        {meeting.decision === "bot" ? (
-                          <>
-                            <Bot size={18} /> Clara (AI Proxy)
-                          </>
-                        ) : (
-                          <>
-                            <User size={18} /> Human Required
-                          </>
-                        )}
+                        <div className="flex flex-col md:flex-row justify-between gap-8">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <h3 className="text-2xl font-bold text-white tracking-tight">
+                                {meeting.title}
+                              </h3>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-5 text-sm font-medium text-zinc-400 mb-6">
+                              <span className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-white/5">
+                                <Clock
+                                  size={16}
+                                  className={
+                                    isBot
+                                      ? "text-purple-400"
+                                      : "text-emerald-400"
+                                  }
+                                />
+                                {formatTime(meeting.startTime)} -{" "}
+                                {formatTime(meeting.endTime)}
+                              </span>
+                              {meeting.meetLink && (
+                                <a
+                                  href={meeting.meetLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors bg-blue-500/10 px-3 py-1.5 rounded-lg"
+                                >
+                                  <Video size={16} /> Join Protocol
+                                </a>
+                              )}
+                            </div>
+
+                            <div className="bg-black/40 border border-white/5 rounded-xl p-4">
+                              <div className="flex items-center gap-2 text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">
+                                <AlignLeft size={14} /> Triage Analysis
+                              </div>
+                              <p className="text-sm text-zinc-300 leading-relaxed">
+                                {meeting.reason}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col md:items-end justify-start min-w-[220px]">
+                            <div
+                              className={`w-full flex items-center justify-center md:justify-end gap-3 px-5 py-4 rounded-xl text-sm font-bold border ${
+                                isBot
+                                  ? "bg-purple-500/10 text-purple-300 border-purple-500/30 shadow-[inset_0_0_20px_rgba(147,51,234,0.1)]"
+                                  : "bg-emerald-500/10 text-emerald-300 border-emerald-500/30 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]"
+                              }`}
+                            >
+                              {isBot ? (
+                                <>
+                                  <Bot size={20} /> Proxy Deployed
+                                </>
+                              ) : (
+                                <>
+                                  <User size={20} /> Human Required
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))
+                    </motion.div>
+                  );
+                })}
+              </div>
             )}
           </motion.div>
         )}
+
+        {/* FLOATING CHAT BOT BUTTON */}
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.5, type: "spring" }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center shadow-[0_0_40px_rgba(147,51,234,0.5)] border border-purple-400/50 z-50 group"
+        >
+          {/* Ping animation behind the button */}
+          <span className="absolute inset-0 rounded-full bg-purple-500 opacity-20 group-hover:animate-ping" />
+          <LuMessageSquareText
+            className="text-white relative z-10"
+            size={28}
+          />
+        </motion.button>
       </div>
     </div>
   );
