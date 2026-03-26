@@ -22,8 +22,6 @@ export const RegisterAndLoginUsingGoogle = async (
     const tokens = generateTokens(user._id.toString());
     setRefreshCookie(res, tokens.refreshToken);
 
-    // FIX: Redirect WITHOUT the token in the URL.
-    // The frontend will automatically call /refresh to get it securely.
     return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
   } catch (error) {
     console.error("Google Auth Error:", error);
