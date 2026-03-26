@@ -42,7 +42,6 @@ export default function ClaraAgent({
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
-      // Hits NEXT_PUBLIC_SERVER_URL/ai/clara/triage via AxiosInstance
       const response = await AxiosInstance.post("/ai/clara/triage", {
         prompt: userMessage,
         role: userRole,
@@ -84,7 +83,7 @@ export default function ClaraAgent({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 bottom-0 w-full md:w-[450px] bg-[#0a0514] border-l border-purple-500/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-50 flex flex-col"
+            className="fixed top-0 right-0 bottom-0 w-full md:w-112.5 bg-[#0a0514] border-l border-purple-500/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-50 flex flex-col"
           >
             <div className="p-5 border-b border-white/5 flex items-center justify-between bg-black/40 backdrop-blur-md">
               <div className="flex items-center gap-3">
@@ -155,7 +154,7 @@ export default function ClaraAgent({
                     }
                   }}
                   placeholder="Message Clara..."
-                  className="w-full scrollbar-small bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none resize-none max-h-[150px] min-h-[24px] py-2 pl-3"
+                  className="w-full scrollbar-small bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none resize-none max-h-37.5 min-h-6 py-2 pl-3"
                   rows={1}
                 />
                 <button
