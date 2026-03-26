@@ -186,7 +186,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#05000a] text-zinc-100 p-6 md:p-12 relative overflow-hidden font-sans">
-      <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+      <div className="fixed top-[-20%] right-[-10%] w-200 h-200 bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
       <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-emerald-900/5 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10">
