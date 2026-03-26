@@ -43,10 +43,13 @@ export default function ClaraAgent({
 
     try {
       // Hits NEXT_PUBLIC_SERVER_URL/ai/clara/triage via AxiosInstance
-      const { data } = await AxiosInstance.post("/ai/clara/triage", {
+      const response = await AxiosInstance.post("/ai/clara/triage", {
         prompt: userMessage,
         role: userRole,
       });
+
+      const data = response.data;
+      console.log(data)
 
       setResponses((prev) => [
         ...prev,
