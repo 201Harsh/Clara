@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import CalendarEventModel from "../models/calendar-model.js";
 import UserModel from "../models/user-model.js";
 import { getTodaysMeetings } from "../services/calendar.service.js";
-import { triageMeetings } from "../main/meeting-arrange-ai.js";
+import { triageMeetings } from "../main/meeting-adjustor.js";
 
 export const GetDailyMeetings = async (
   req: Request,
