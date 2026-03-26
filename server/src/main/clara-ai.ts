@@ -1,36 +1,41 @@
 import Groq from "groq-sdk";
 
-const groq = new Groq();
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-export async function triageMeetings(meetingsData: any, userRole: string) {
+// (Keep your existing triageMeetings function here...)
+export async function ClaraAI() {
+  // ... existing code ...
+}
+
+// NEW: Chatbot function
+export async function handleClaraChat(
+  prompt: string,
+  userRole: string,
+  schedule: any,
+) {
   const systemPrompt = `
-    You are Clara, an elite autonomous personal assistant. 
+    You are Clara, an elite, highly professional, and autonomous personal assistant.
     Your user's role is: ${userRole}.
-    Exact time is ${new Date().toLocaleString()}
-    Analyze the following daily meeting schedule. Determine which meetings the user MUST attend in person, and which meetings are "Listen Only" where you (the bot) should attend as a proxy to take notes.
     
-    Rules:
-    - 1-on-1s, client pitches, or performance reviews = "human"
-    - Weekly syncs, all-hands, or general updates = "bot"
+    Here is their schedule for today: ${JSON.stringify(schedule)}
     
-    CRITICAL: You MUST respond with a valid JSON object containing a "triage" array, like this:
-    {
-      "triage": [
-        { "id": "meeting_id", "title": "meeting_name", "decision": "bot", "reason": "General weekly sync." },
-        { "id": "meeting_id", "title": "meeting_name", "decision": "human", "reason": "1-on-1 requires personal presence." }
-      ]
-    }
+    Instructions:
+    - Answer the user's prompt directly, concisely, and in character as their AI proxy.
+    - If they ask about their day, reference the schedule provided.
+    - Keep responses brief, sharp, and highly professional (under 3 sentences).
+    - Do not use markdown formatting unless absolutely necessary.
   `;
 
   const completion = await groq.chat.completions.create({
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: JSON.stringify(meetingsData) },
+      { role: "user", content: prompt },
     ],
     model: "llama-3.3-70b-versatile",
-    response_format: { type: "json_object" },
   });
 
-  const response = completion.choices[0]?.message?.content || '{"triage": []}';
-  return JSON.parse(response);
+  return (
+    completion.choices[0]?.message?.content ||
+    "I am currently processing your request. Please hold."
+  );
 }

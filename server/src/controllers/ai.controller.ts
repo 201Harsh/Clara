@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { triageMeetings } from "../main/clara-ai.js";
+import { triageMeetings } from "../main/meeting-arrange-ai.js";
 import CalendarEventModel from "../models/calendar-model.js";
 
 export const TriageMeetings = async (
