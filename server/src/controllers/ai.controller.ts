@@ -35,7 +35,7 @@ export const TriageMeetings = async (
       endTime: m.endTime,
     }));
 
-    const userRole = req.body?.role || "Software Engineer";
+    const userRole = req.body?.role || "";
     const aiResponse = await triageMeetings(formattedMeetings, userRole);
 
     return res.status(200).json({

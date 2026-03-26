@@ -20,6 +20,7 @@ export const RegisterAndLoginUsingGoogle = async (
     }
 
     const tokens = generateTokens(user._id.toString());
+    console.log(tokens)
 
     setRefreshCookie(res, tokens.refreshToken);
 
@@ -67,5 +68,38 @@ export const RefreshAccessToken = async (req: Request, res: Response) => {
     return res
       .status(403)
       .json({ error: "Forbidden. Token expired or invalid." });
+  }
+};
+
+export const GetProfile = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userPayload = (req as any).user;
+    const userId = userPayload?.userId || userPayload?.id || userPayload?._id;
+
+    const user = await UserModel.findById(userId).select("name email role");
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch profile" });
+  }
+};
+
+export const UpdateRole = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userPayload = (req as any).user;
+    const userId = userPayload?.userId || userPayload?.id || userPayload?._id;
+    const { role } = req.body;
+
+    if (!role) return res.status(400).json({ error: "Role is required" });
+
+    const user = await UserModel.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true },
+    );
+    return res.status(200).json({ message: "Role updated", user });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update role" });
   }
 };
