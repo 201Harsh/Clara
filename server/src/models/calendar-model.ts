@@ -13,8 +13,8 @@ export interface IMeeting {
 
 export interface ICalendarEvent extends Document {
   userId: mongoose.Types.ObjectId;
-  date: Date; // Stores the start of the day (e.g., 00:00:00)
-  meetings: IMeeting[]; // The Array of meetings
+  date: Date; 
+  meetings: IMeeting[];
 }
 
 const MeetingSchema: Schema = new Schema({
@@ -36,7 +36,7 @@ const CalendarEventSchema: Schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     date: { type: Date, required: true },
-    meetings: [MeetingSchema], // Saves as an array here
+    meetings: [MeetingSchema],
   },
   { timestamps: true },
 );
