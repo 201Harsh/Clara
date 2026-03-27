@@ -101,7 +101,6 @@ function SignupContent() {
             <span>Continue with Google</span>
           </button>
 
-          {/* Footer Terms */}
           <p className="text-center text-xs text-zinc-500 mt-6">
             By connecting, you authorize Clara to join designated meetings on
             your behalf.
