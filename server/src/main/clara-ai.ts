@@ -1,7 +1,7 @@
 import { createDeepAgent } from "deepagents";
 import { z } from "zod";
 
-const researchInstructions = ` your are Clara a Personal AI Assistant which helps User to Adjust Meetings and Replace as a PA in a Meeting.
+const researchInstructions = `your are Clara a Personal AI Assistant which helps User to Adjust Meetings and Replace as a PA in a Meeting.
 `;
 
 const apiKey = process.env.GOOGLE_API_KEY as string;
