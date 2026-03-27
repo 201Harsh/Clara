@@ -24,7 +24,7 @@ const claraAgent = async ({ prompt }: { prompt: string }) => {
       },
       { context: {apiKey: apiKey } },
     );
-    console.log(response);
+    console.log(response.messages);
     return response;
   } catch (error) {
     console.log(error);
