@@ -41,7 +41,6 @@ const CalendarEventSchema: Schema = new Schema(
   { timestamps: true },
 );
 
-// Ensures a user only has one active schedule document per day
 CalendarEventSchema.index({ userId: 1, date: 1 }, { unique: true });
 
 const CalendarEventModel = mongoose.model<ICalendarEvent>(
