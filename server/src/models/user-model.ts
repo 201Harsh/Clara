@@ -6,7 +6,7 @@ export interface IUser extends Document {
   googleId?: string | null;
   googleAccessToken?: string;
   googleRefreshToken?: string;
-  role?: string | null; // ADDED THIS
+  role?: string | null; 
 }
 
 const UserSchema: Schema = new Schema(
@@ -16,7 +16,7 @@ const UserSchema: Schema = new Schema(
     googleId: { type: String, default: null },
     googleAccessToken: { type: String },
     googleRefreshToken: { type: String },
-    role: { type: String, default: null }, // ADDED THIS
+    role: { type: String, default: null },
   },
   { timestamps: true },
 );
