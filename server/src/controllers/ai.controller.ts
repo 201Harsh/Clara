@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getTodaysMeetings } from "../services/calendar.service.js";
 import { triageMeetings } from "../main/meeting-adjustor.js";
 import UserModel from "../models/user-model.js";
+import claraAgent from "../main/clara-ai.js";
 
 export const TriageMeetings = async (req: Request, res: Response) => {
   try {
@@ -44,6 +45,23 @@ export const TriageMeetings = async (req: Request, res: Response) => {
     console.error("Clara Triage Error:", error);
     return res.status(500).json({
       error: "Internal server error while processing calendar data",
+    });
+  }
+};
+
+export const ClaraAgent = async (req: Request, res: Response) => {
+  try {
+    const { prompt } = req.body;
+
+    const response = await claraAgent({
+      prompt,
+    });
+    return res.status(200).json({
+      response,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Internal server error" + error,
     });
   }
 };
