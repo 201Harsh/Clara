@@ -22,10 +22,11 @@ const claraAgent = async ({ prompt }: { prompt: string }) => {
       {
         messages: [{ role: "user", content: prompt }],
       },
-      { context: {apiKey: apiKey } },
+      { context: { apiKey: apiKey } },
     );
-    console.log(response.messages);
-    return response;
+    const lastMessage = response.messages[response.messages.length - 1];
+    const content = lastMessage?.content;
+    return content;
   } catch (error) {
     console.log(error);
     return error;
