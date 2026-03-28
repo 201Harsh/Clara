@@ -8,7 +8,6 @@ const getMeetingsService = async ({
   User: any;
   userId: string;
 }) => {
-  // 1. Fetch fresh raw meetings from Google Calendar
   const rawMeetings = await getTodaysMeetings(
     userId,
     User.googleAccessToken,
