@@ -9,7 +9,16 @@ const page = () => {
       const response = await AxiosInstance.get("/calendar/all/meetings");
 
       console.log(response.data);
+    } catch (error: any) {
+      console.log(error);
+    }
+  };
 
+  const GetUserProfile = async () => {
+    try {
+      const response = await AxiosInstance.get("/users/profile");
+
+      console.log(response.data);
     } catch (error: any) {
       console.log(error);
     }
@@ -17,6 +26,7 @@ const page = () => {
 
   useEffect(() => {
     GetAllMeetings();
+    GetUserProfile();
   }, []);
 
   return (
