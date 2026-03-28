@@ -20,7 +20,7 @@ const ClaraAgent = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="fixed bottom-24 right-6 w-[380px] h-[500px] max-h-[80vh] bg-[#0a0314]/90 backdrop-blur-2xl border border-purple-500/40 rounded-3xl shadow-[0_10px_50px_rgba(147,51,234,0.2)] flex flex-col z-50 overflow-hidden"
+            className="fixed bottom-24 right-6 w-95 h-125 max-h-[80vh] bg-[#0a0314]/90 backdrop-blur-2xl border border-purple-500/40 rounded-3xl shadow-[0_10px_50px_rgba(147,51,234,0.2)] flex flex-col z-50 overflow-hidden"
           >
             {/* Chat Header */}
             <div className="px-5 py-4 border-b border-purple-500/20 bg-black/40 flex justify-between items-center shrink-0">
@@ -56,7 +56,7 @@ const ClaraAgent = ({
                   <div
                     className={`max-w-[85%] p-3 rounded-2xl text-sm ${
                       msg.role === "user"
-                        ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-none"
+                        ? "bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-br-none"
                         : "bg-white/5 border border-purple-500/20 text-zinc-300 rounded-bl-none"
                     }`}
                   >
