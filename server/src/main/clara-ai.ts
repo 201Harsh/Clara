@@ -36,22 +36,22 @@ const claraAgent = async ({
   schedule,
 }: ClaraParams) => {
   try {
-    // Inject the user's specific reality right now as a temporary system message
+    // Inject the user's specific reality right now
     const dynamicContext = `
       CURRENT USER REALITY:
       - Name: ${userName}
       - Role: ${role}
       - Today's Schedule: ${JSON.stringify(schedule)}
       
-      Instructions: If the user asks about their agenda, reference the schedule above.
+      Instructions: Use the context above to inform your response.
     `;
+
+    // THE FIX: Bundle the context and the prompt into a single User message
+    const combinedMessage = `${dynamicContext}\n\nUSER PROMPT:\n${prompt}`;
 
     const response = await agent.invoke(
       {
-        messages: [
-          { role: "system", content: dynamicContext },
-          { role: "user", content: prompt },
-        ],
+        messages: [{ role: "user", content: combinedMessage }],
       },
       {
         context: { apiKey: apiKey, userId: userId },
