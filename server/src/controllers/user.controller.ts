@@ -24,7 +24,7 @@ export const RegisterAndLoginUsingGoogle = async (
     setTokenCookie(res, token);
 
     return res.redirect(
-      `${process.env.CLIENT_URL}/dashboard?token=${tokens.accessToken}`,
+      `${process.env.CLIENT_URL}/dashboard?SignupSuccess=true`,
     );
   } catch (error) {
     console.error("Google Auth Error:", error);
