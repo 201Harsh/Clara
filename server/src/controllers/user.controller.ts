@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { generateTokens, setRefreshCookie } from "../utils/user-utils.js";
 import jwt from "jsonwebtoken";
 import UserModel from "../models/user-model.js";
+import { generateToken, setTokenCookie } from "../utils/user-utils.js";
 
 interface GoogleUser {
   _id: string;
@@ -19,9 +19,9 @@ export const RegisterAndLoginUsingGoogle = async (
       return res.redirect(`${process.env.CLIENT_SIDE_URL}/signup?error=NoUser`);
     }
 
-    const tokens = generateTokens(user._id.toString());
+    const token = generateToken(user._id.toString());
 
-    setRefreshCookie(res, tokens.refreshToken);
+    setTokenCookie(res, token);
 
     return res.redirect(
       `${process.env.CLIENT_URL}/dashboard?token=${tokens.accessToken}`,
