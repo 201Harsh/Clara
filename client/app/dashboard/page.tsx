@@ -140,13 +140,15 @@ export default function DashboardPage() {
   const handleRoleSelection = async (selectedRole: string) => {
     setIsSavingRole(true);
     try {
+      // 1. Update the role in the database
       await AxiosInstance.put("/users/role", { role: selectedRole });
 
+      // 2. Update local state to close modals/onboarding
       setUserProfile((prev) => (prev ? { ...prev, role: selectedRole } : null));
-      setIsRoleModalOpen(false); // Close the modal if it was open
+      setIsRoleModalOpen(false);
 
-      await AxiosInstance.post("/calendar/sync", { role: selectedRole });
-      const meetingsRes = await AxiosInstance.get("/calendar/today");
+      // 3. Re-fetch the meetings using the ONLY route we have
+      const meetingsRes = await AxiosInstance.get("/calendar/all/meetings");
       setMeetings(meetingsRes.data.meetings || []);
     } catch (error) {
       console.error("Failed to save role:", error);
@@ -155,6 +157,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Infinite Scroll Logic
   const handleHumanScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
@@ -177,9 +180,11 @@ export default function DashboardPage() {
     });
   };
 
+  // --- Derived Data ---
   const humanMeetings = meetings.filter((m) => m.decision === "human");
   const botMeetings = meetings.filter((m) => m.decision === "bot");
 
+  // --- Animation Variants ---
   const containerVars = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.05 } },
@@ -273,7 +278,7 @@ export default function DashboardPage() {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all px-2 py-2 pr-4 rounded-full cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-full bg-linear-to-br from-purple-500 to-pink-600 flex items-center justify-center font-bold text-white text-sm shadow-[0_0_10px_rgba(147,51,234,0.4)]">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center font-bold text-white text-sm shadow-[0_0_10px_rgba(147,51,234,0.4)]">
                   {userProfile.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left hidden sm:block">
@@ -334,6 +339,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* --- CHANGE ROLE MODAL --- */}
       <AnimatePresence>
         {isRoleModalOpen && (
           <>
