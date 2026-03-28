@@ -1,36 +1,21 @@
-import Groq from "groq-sdk";
+import { SubAgent } from "deepagents";
 
-const groq = new Groq();
+export const meetingAdjustorSubagent: SubAgent = {
+  name: "meeting-adjustor",
+  description:
+    "Analyzes the user's daily schedule to determine which meetings require human attendance and which can be attended by the bot proxy. Call this immediately when the user asks to adjust, triage, or organize meetings.",
 
-export async function triageMeetings(meetingsData: any, userRole: string) {
-  const systemPrompt = `
-    You are Clara, an elite autonomous personal assistant. 
-    Your user's role is: ${userRole}.
-    Exact time is ${new Date().toLocaleString()}
-    Analyze the following daily meeting schedule. Determine which meetings the user MUST attend in person, and which meetings are "Listen Only" where you (the bot) should attend as a proxy to take notes.
-    
-    Rules:
-    - 1-on-1s, client pitches, or performance reviews = "human"
-    - Weekly syncs, all-hands, or general updates = "bot"
-    
-    CRITICAL: You MUST respond with a valid JSON object containing a "triage" array, like this:
-    {
-      "triage": [
-        { "id": "meeting_id", "title": "meeting_name", "decision": "bot", "reason": "General weekly sync." },
-        { "id": "meeting_id", "title": "meeting_name", "decision": "human", "reason": "1-on-1 requires personal presence." }
-      ]
-    }
-  `;
+  model: "google-genai:gemini-2.5-flash-lite",
 
-  const completion = await groq.chat.completions.create({
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: JSON.stringify(meetingsData) },
-    ],
-    model: "llama-3.1-8b-instant",
-    response_format: { type: "json_object" },
-  });
+  systemPrompt: `You are the Meeting Adjustor Subagent. Your job is to make decisions, not ask questions.
+  Analyze the schedule provided in the context.
+  
+  Rules for Triage:
+  - 1-on-1s, client pitches, or performance reviews MUST be "human".
+  - Weekly syncs, all-hands, or general updates MUST be "bot".
+  - Strictly consider the user's operational role when making these decisions.
+  
+  CRITICAL: You must return a definitive plan mapping each meeting's 'googleEventId' to either "human" or "bot", along with a short 1-sentence reason. Do NOT ask for user input. Make the decisions yourself based on the rules.`,
 
-  const response = completion.choices[0]?.message?.content || '{"triage": []}';
-  return JSON.parse(response);
-}
+  tools: [],
+};
