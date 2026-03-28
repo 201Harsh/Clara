@@ -575,7 +575,6 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* --- CLARA FLOATING AGENT INTERFACE --- */}
       <ClaraAgent
         isChatOpen={isChatOpen}
         setIsChatOpen={setIsChatOpen}
@@ -587,7 +586,6 @@ export default function DashboardPage() {
         handleSendMessage={handleSendMessage}
       />
 
-      {/* Floating Action Button */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
