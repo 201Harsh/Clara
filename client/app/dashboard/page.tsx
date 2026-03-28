@@ -145,7 +145,6 @@ export default function DashboardPage() {
       setUserProfile((prev) => (prev ? { ...prev, role: selectedRole } : null));
       setIsRoleModalOpen(false); // Close the modal if it was open
 
-      // Optional: Sync calendar with new role rules
       await AxiosInstance.post("/calendar/sync", { role: selectedRole });
       const meetingsRes = await AxiosInstance.get("/calendar/today");
       setMeetings(meetingsRes.data.meetings || []);
@@ -156,7 +155,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Infinite Scroll Logic
   const handleHumanScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
@@ -179,11 +177,9 @@ export default function DashboardPage() {
     });
   };
 
-  // --- Derived Data ---
   const humanMeetings = meetings.filter((m) => m.decision === "human");
   const botMeetings = meetings.filter((m) => m.decision === "bot");
 
-  // --- Animation Variants ---
   const containerVars = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.05 } },
@@ -338,7 +334,6 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* --- CHANGE ROLE MODAL --- */}
       <AnimatePresence>
         {isRoleModalOpen && (
           <>
