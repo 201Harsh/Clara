@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, Suspense } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -22,6 +22,8 @@ import {
   Database,
   Target,
   Layers,
+  X,
+  AlignLeft,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 
@@ -102,6 +104,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSavingRole, setIsSavingRole] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
   // Pagination / Lazy Loading State
   const [visibleHumanCount, setVisibleHumanCount] = useState(10);
@@ -137,13 +140,12 @@ export default function DashboardPage() {
   const handleRoleSelection = async (selectedRole: string) => {
     setIsSavingRole(true);
     try {
-      // Assumes you have an endpoint to update the user's profile
       await AxiosInstance.put("/users/role", { role: selectedRole });
 
-      // Update local state to dismiss the onboarding screen
       setUserProfile((prev) => (prev ? { ...prev, role: selectedRole } : null));
+      setIsRoleModalOpen(false); // Close the modal if it was open
 
-      // Optional: Immediately trigger a triage sync based on new role
+      // Optional: Sync calendar with new role rules
       await AxiosInstance.post("/calendar/sync", { role: selectedRole });
       const meetingsRes = await AxiosInstance.get("/calendar/today");
       setMeetings(meetingsRes.data.meetings || []);
@@ -154,6 +156,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Infinite Scroll Logic
   const handleHumanScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
@@ -195,17 +198,17 @@ export default function DashboardPage() {
   };
 
   // =========================================================================
-  // 1. ONBOARDING ROLE SELECTION (Renders if user exists but role is null)
+  // 1. ONBOARDING ROLE SELECTION
   // =========================================================================
   if (!isLoading && userProfile && !userProfile.role) {
     return (
       <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative overflow-y-auto">
         <div className="absolute inset-0 bg-purple-900/10 blur-[150px] pointer-events-none" />
 
-        <div className="max-w-5xl w-full bg-black/60 border border-white/10 rounded-3xl p-8 md:p-12 backdrop-blur-xl relative z-10 text-center shadow-2xl my-12">
+        <div className="max-w-5xl w-full bg-black/60 border border-white/10 rounded-3xl p-8 md:p-12 backdrop-blur-xl relative z-10 text-center shadow-[0_0_50px_rgba(147,51,234,0.15)] my-12">
           <Bot size={48} className="text-purple-500 mx-auto mb-6" />
           <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
-            Initialize Clara Protocol
+            Initialize Protocol
           </h1>
           <p className="text-zinc-400 text-lg max-w-2xl mx-auto mb-12">
             To perfectly triage your schedule, Clara needs to understand your
@@ -246,12 +249,13 @@ export default function DashboardPage() {
   // 2. MAIN DASHBOARD
   // =========================================================================
   return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
+    <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
+      {/* Background Ambience */}
       <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-emerald-900/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
 
       {/* --- Header --- */}
-      <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/5">
+      <header className="sticky top-0 z-40 bg-black/50 backdrop-blur-xl border-b border-purple-500/20 shadow-[0_0_30px_rgba(147,51,234,0.05)]">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30 shadow-[0_0_15px_rgba(147,51,234,0.2)]">
@@ -311,6 +315,16 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setIsRoleModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-300 hover:bg-white/5 hover:text-white transition-colors text-sm font-bold cursor-pointer mb-1"
+                    >
+                      <ShieldAlert size={16} className="text-purple-400" />{" "}
+                      Change Protocol Role
+                    </button>
+                    <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold cursor-pointer"
                     >
@@ -324,36 +338,107 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* --- Main Content --- */}
+      {/* --- CHANGE ROLE MODAL --- */}
+      <AnimatePresence>
+        {isRoleModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsRoleModalOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-5xl bg-[#0a0314] border border-purple-500/30 rounded-3xl p-8 md:p-10 z-[101] shadow-[0_0_50px_rgba(147,51,234,0.15)] max-h-[90vh] overflow-y-auto scrollbar-small"
+            >
+              <button
+                onClick={() => setIsRoleModalOpen(false)}
+                className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+              <div className="text-center mb-10">
+                <Bot size={40} className="text-purple-500 mx-auto mb-4" />
+                <h2 className="text-3xl font-extrabold text-white tracking-tight mb-2">
+                  Reconfigure Protocol
+                </h2>
+                <p className="text-zinc-400">
+                  Update your operational role to adjust how Clara triages your
+                  schedule.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
+                {ROLES.map((role) => (
+                  <button
+                    key={role.id}
+                    disabled={isSavingRole}
+                    onClick={() => handleRoleSelection(role.id)}
+                    className={`group relative flex flex-col p-6 rounded-2xl border transition-all cursor-pointer overflow-hidden disabled:opacity-50 ${userProfile?.role === role.id ? "bg-purple-500/20 border-purple-500 shadow-[0_0_20px_rgba(147,51,234,0.3)]" : "bg-white/5 border-white/10 hover:border-purple-500/50 hover:bg-purple-500/10"}`}
+                  >
+                    <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors" />
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 border transition-transform shadow-[0_0_15px_rgba(147,51,234,0.1)] ${userProfile?.role === role.id ? "bg-purple-600 border-purple-400 text-white" : "bg-black text-purple-400 border-white/5 group-hover:scale-110"}`}
+                    >
+                      {role.icon}
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-2">
+                      {role.id}
+                    </h3>
+                    <p className="text-sm text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors">
+                      {role.desc}
+                    </p>
+                  </button>
+                ))}
+              </div>
+              {isSavingRole && (
+                <div className="mt-8 flex items-center justify-center gap-3 text-purple-400 font-mono text-sm animate-pulse">
+                  <Activity size={16} /> RECALIBRATING NEURAL NET...
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* --- Main Content Split Deck --- */}
       <main className="max-w-7xl mx-auto px-6 py-10 relative z-10 h-[calc(100vh-80px)] flex flex-col">
-        <div className="mb-8 shrink-0">
-          <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">
-            Daily Triage
-          </h2>
-          <p className="text-zinc-400 text-sm font-medium">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
+        <div className="mb-8 shrink-0 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">
+              Daily Triage
+            </h2>
+            <p className="text-zinc-400 text-sm font-medium uppercase tracking-wider">
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+          </div>
         </div>
 
         {isLoading ? (
           <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="w-10 h-10 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-4" />
+            <div className="w-12 h-12 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-4 shadow-[0_0_30px_rgba(147,51,234,0.3)]" />
             <p className="font-mono text-xs tracking-[0.2em] text-purple-400/70 animate-pulse">
               SYNCING DATABANKS...
             </p>
           </div>
         ) : meetings.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center bg-white/5 border border-white/10 rounded-3xl p-12 backdrop-blur-sm max-w-md">
-              <CalendarIcon size={48} className="mx-auto text-zinc-600 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">
+            <div className="text-center bg-[#05000a] border border-purple-500/20 rounded-3xl p-12 backdrop-blur-xl max-w-md shadow-[0_0_50px_rgba(147,51,234,0.1)]">
+              <CalendarIcon
+                size={48}
+                className="mx-auto text-purple-500 mb-6"
+              />
+              <h3 className="text-2xl font-bold text-white mb-3">
                 Clear Schedule
               </h3>
-              <p className="text-zinc-500 text-sm">
+              <p className="text-zinc-400">
                 No operations required today. Clara is standing by.
               </p>
             </div>
@@ -361,13 +446,15 @@ export default function DashboardPage() {
         ) : (
           <div className="flex-1 grid lg:grid-cols-2 gap-8 overflow-hidden pb-4">
             {/* --- COLUMN 1: HUMAN MEETINGS --- */}
-            <div className="flex flex-col h-full bg-[#050505]/50 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-md">
-              <div className="p-5 border-b border-white/5 bg-black/40 flex items-center justify-between shrink-0">
+            <div className="flex flex-col h-full bg-[#050505]/60 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
+              <div className="p-5 border-b border-white/5 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                    <User size={16} className="text-emerald-400" />
+                  <div className="w-9 h-9 rounded-xl bg-pink-500/10 flex items-center justify-center border border-pink-500/20">
+                    <User size={18} className="text-pink-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-white">Your Agenda</h3>
+                  <h3 className="text-xl font-bold text-white tracking-tight">
+                    Your Agenda
+                  </h3>
                 </div>
                 <span className="bg-white/10 text-zinc-300 text-xs font-bold px-3 py-1 rounded-full">
                   {humanMeetings.length}
@@ -378,7 +465,13 @@ export default function DashboardPage() {
                 onScroll={handleHumanScroll}
                 className="flex-1 overflow-y-auto scrollbar-small p-5 space-y-4"
               >
-                <Suspense fallback={<div>Loading cards...</div>}>
+                <Suspense
+                  fallback={
+                    <div className="text-zinc-500 text-sm text-center py-10">
+                      Decrypting...
+                    </div>
+                  }
+                >
                   <motion.div
                     variants={containerVars}
                     initial="hidden"
@@ -390,35 +483,38 @@ export default function DashboardPage() {
                         <motion.div
                           variants={itemVars}
                           key={meeting.googleEventId}
-                          className="bg-black border border-white/10 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors group mb-4"
+                          className="bg-black/50 border border-white/10 rounded-2xl p-6 hover:border-pink-500/30 transition-all group mb-4 shadow-lg hover:shadow-[0_0_20px_rgba(236,72,153,0.1)]"
                         >
-                          <div className="flex items-start justify-between gap-4 mb-3">
-                            <h4 className="font-bold text-white text-lg leading-tight group-hover:text-emerald-50 transition-colors">
+                          <div className="flex items-start justify-between gap-4 mb-4">
+                            <h4 className="font-bold text-white text-lg leading-tight group-hover:text-pink-50 transition-colors">
                               {meeting.title}
                             </h4>
-                            <span className="shrink-0 text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md uppercase">
+                            <span className="shrink-0 text-[10px] font-bold text-pink-400 bg-pink-400/10 border border-pink-500/20 px-2.5 py-1 rounded-md uppercase tracking-wider">
                               Human
                             </span>
                           </div>
-                          <div className="flex items-center gap-4 text-xs font-medium text-zinc-500 mb-4">
+                          <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-400 mb-5">
                             <span className="flex items-center gap-1.5">
-                              <Clock size={14} className="text-emerald-400" />{" "}
-                              {formatTime(meeting.startTime)}
+                              <Clock size={14} className="text-pink-400" />{" "}
+                              {formatTime(meeting.startTime)} -{" "}
+                              {formatTime(meeting.endTime)}
                             </span>
                             {meeting.meetLink && (
                               <a
                                 href={meeting.meetLink}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-1 text-blue-400 hover:underline"
+                                className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
                               >
-                                <Video size={14} /> Link
+                                <Video size={14} /> Join Meet
                               </a>
                             )}
                           </div>
-                          <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-                            <p className="text-xs text-zinc-400">
-                              <strong className="text-zinc-300">Reason:</strong>{" "}
+                          <div className="bg-white/5 rounded-xl p-3.5 border border-white/5">
+                            <p className="text-xs text-zinc-300 leading-relaxed">
+                              <strong className="text-pink-300 uppercase tracking-wide flex items-center gap-1 mb-1">
+                                <AlignLeft size={12} /> Reason
+                              </strong>{" "}
                               {meeting.reason}
                             </p>
                           </div>
@@ -435,13 +531,13 @@ export default function DashboardPage() {
             </div>
 
             {/* --- COLUMN 2: BOT MEETINGS --- */}
-            <div className="flex flex-col h-full bg-[#0a0314]/50 border border-purple-500/20 rounded-3xl overflow-hidden backdrop-blur-md shadow-[0_0_50px_rgba(147,51,234,0.05)]">
-              <div className="p-5 border-b border-purple-500/20 bg-black/40 flex items-center justify-between shrink-0">
+            <div className="flex flex-col h-full bg-[#0a0314]/60 border border-purple-500/20 rounded-3xl overflow-hidden backdrop-blur-xl shadow-[0_0_50px_rgba(147,51,234,0.05)]">
+              <div className="p-5 border-b border-purple-500/20 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center border border-purple-500/40 shadow-[0_0_10px_rgba(147,51,234,0.3)]">
-                    <Bot size={16} className="text-purple-400" />
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/40 shadow-[0_0_10px_rgba(147,51,234,0.3)]">
+                    <Bot size={18} className="text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-white">
+                  <h3 className="text-xl font-bold text-white tracking-tight">
                     Clara Directives
                   </h3>
                 </div>
@@ -454,7 +550,13 @@ export default function DashboardPage() {
                 onScroll={handleBotScroll}
                 className="flex-1 overflow-y-auto scrollbar-small p-5 space-y-4 relative"
               >
-                <Suspense fallback={<div>Loading cards...</div>}>
+                <Suspense
+                  fallback={
+                    <div className="text-purple-500 text-sm text-center py-10">
+                      Decrypting...
+                    </div>
+                  }
+                >
                   <motion.div
                     variants={containerVars}
                     initial="hidden"
@@ -464,28 +566,29 @@ export default function DashboardPage() {
                       <motion.div
                         variants={itemVars}
                         key={meeting.googleEventId}
-                        className="relative bg-[#05000a] border border-purple-500/30 rounded-2xl p-5 hover:border-purple-500/60 hover:bg-[#0a0514] transition-all group mb-4 overflow-hidden shadow-[0_5px_20px_rgba(0,0,0,0.5)]"
+                        className="relative bg-[#05000a] border border-purple-500/30 rounded-2xl p-6 hover:border-purple-500/60 hover:bg-[#0a0514] transition-all group mb-4 overflow-hidden shadow-[0_5px_20px_rgba(0,0,0,0.5)]"
                       >
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)]" />
 
-                        <div className="flex items-start justify-between gap-4 mb-3 pl-2">
+                        <div className="flex items-start justify-between gap-4 mb-4 pl-2">
                           <h4 className="font-bold text-white text-lg leading-tight group-hover:text-purple-50 transition-colors">
                             {meeting.title}
                           </h4>
-                          <span className="shrink-0 text-xs font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded-md uppercase flex items-center gap-1.5">
-                            <Activity size={12} /> Proxy
+                          <span className="shrink-0 text-[10px] font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center gap-1.5">
+                            <Activity size={12} /> Proxy Active
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 text-xs font-medium text-zinc-500 mb-4 pl-2">
+                        <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-500 mb-5 pl-2">
                           <span className="flex items-center gap-1.5">
                             <Clock size={14} className="text-purple-400" />{" "}
-                            {formatTime(meeting.startTime)}
+                            {formatTime(meeting.startTime)} -{" "}
+                            {formatTime(meeting.endTime)}
                           </span>
                         </div>
-                        <div className="bg-black/60 rounded-lg p-3 border border-purple-500/10 pl-4 ml-2">
-                          <p className="text-xs text-zinc-400">
-                            <strong className="text-purple-300">
-                              Directive:
+                        <div className="bg-black/60 rounded-xl p-3.5 border border-purple-500/20 pl-4 ml-2">
+                          <p className="text-xs text-zinc-300 leading-relaxed">
+                            <strong className="text-purple-400 uppercase tracking-wide flex items-center gap-1 mb-1">
+                              <AlignLeft size={12} /> Directive
                             </strong>{" "}
                             {meeting.reason}
                           </p>
