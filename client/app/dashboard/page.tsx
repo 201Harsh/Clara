@@ -9,10 +9,7 @@ import {
   Video,
   User,
   Bot,
-  ChevronDown,
-  LogOut,
   Activity,
-  ShieldAlert,
   Briefcase,
   Code,
   Megaphone,
@@ -237,7 +234,6 @@ export default function DashboardPage() {
       <div className="fixed top-[-20%] right-[-10%] w-200 h-200 bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
       <div className="fixed bottom-[-20%] left-[-10%] w-150 h-150 bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
 
-      {/* --- Header --- */}
       <DashboardHeader
         setIsDropdownOpen={setIsDropdownOpen}
         isDropdownOpen={isDropdownOpen}
