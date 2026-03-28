@@ -19,7 +19,7 @@ const page = () => {
       const response = await AxiosInstance.get("/users/profile");
 
       console.log(response.data);
-    } catch (error: any) {
+    } catch (error: any) { 
       console.log(error);
     }
   };
