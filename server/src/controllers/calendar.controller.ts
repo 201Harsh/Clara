@@ -42,7 +42,7 @@ export const GetAllMeetings = async (
       startTime: meeting.startTime,
       endTime: meeting.endTime,
       meetLink: meeting.link,
-      decision: "human", // Defaults to user attending
+      decision: "human", 
       reason: "Default: Manual attendance.",
       status: "scheduled",
     }));
