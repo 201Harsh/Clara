@@ -2,28 +2,20 @@ import jwt from "jsonwebtoken";
 import { Response } from "express";
 import mongoose from "mongoose";
 
-const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
-const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET as string;
+const CLARA_EXPIRY = process.env.CLARA_TOKEN_EXPIRY as string;
 
-const ACCESS_TOKEN_EXPIRY =
-  (process.env.ACCESS_TOKEN_EXPIRY as string) || "15m";
-const REFRESH_TOKEN_EXPIRY =
-  (process.env.REFRESH_TOKEN_EXPIRY as string) || "7d";
+const CLARA_TOKEN_EXPIRY = (process.env.CLARA_TOKEN_EXPIRY as string) || "7d";
 
 export const generateTokens = (userId: string | mongoose.Types.ObjectId) => {
-  const accessToken = jwt.sign({ userId }, ACCESS_SECRET, {
-    expiresIn: ACCESS_TOKEN_EXPIRY as any,
+  const refreshToken = jwt.sign({ userId }, CLARA_EXPIRY, {
+    expiresIn: CLARA_TOKEN_EXPIRY as any,
   });
 
-  const refreshToken = jwt.sign({ userId }, REFRESH_SECRET, {
-    expiresIn: REFRESH_TOKEN_EXPIRY as any,
-  });
-
-  return { accessToken, refreshToken };
+  return refreshToken;
 };
 
-export const setRefreshCookie = (res: Response, refreshToken: string) => {
-  res.cookie("clara_refresh", refreshToken, {
+export const setRefreshCookie = (res: Response, Token: string) => {
+  res.cookie("clara_token", Token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -32,7 +24,7 @@ export const setRefreshCookie = (res: Response, refreshToken: string) => {
 };
 
 export const clearRefreshCookie = (res: Response) => {
-  res.clearCookie("clara_refresh", {
+  res.clearCookie("clara_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
