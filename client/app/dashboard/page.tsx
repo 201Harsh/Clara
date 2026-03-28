@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,7 +13,15 @@ import {
   LogOut,
   Activity,
   ShieldAlert,
-  AlignLeft,
+  Briefcase,
+  Code,
+  Megaphone,
+  PenTool,
+  LineChart,
+  Headphones,
+  Database,
+  Target,
+  Layers,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 
@@ -36,6 +44,55 @@ interface UserProfile {
   role: string | null;
 }
 
+// --- Predefined Roles ---
+const ROLES = [
+  {
+    id: "Founder / CEO",
+    icon: <Briefcase size={24} />,
+    desc: "Focus on strategy, pitches, and high-level syncs.",
+  },
+  {
+    id: "Software Engineer",
+    icon: <Code size={24} />,
+    desc: "Protect deep work. Delegate standups and grooming.",
+  },
+  {
+    id: "Product Manager",
+    icon: <Target size={24} />,
+    desc: "Align teams. Clara proxies routine updates.",
+  },
+  {
+    id: "Marketing Director",
+    icon: <Megaphone size={24} />,
+    desc: "Campaign reviews and external agency syncs.",
+  },
+  {
+    id: "Sales Executive",
+    icon: <LineChart size={24} />,
+    desc: "Client-facing priority. Clara handles internal CRM syncs.",
+  },
+  {
+    id: "Design Lead",
+    icon: <PenTool size={24} />,
+    desc: "Creative sprints. Proxy timeline and resource checks.",
+  },
+  {
+    id: "Data Scientist",
+    icon: <Database size={24} />,
+    desc: "Analysis blocks. Clara summarizes metric updates.",
+  },
+  {
+    id: "Operations",
+    icon: <Layers size={24} />,
+    desc: "Process scaling. Proxy vendor and status calls.",
+  },
+  {
+    id: "Customer Success",
+    icon: <Headphones size={24} />,
+    desc: "User retention. Proxy internal team syncs.",
+  },
+];
+
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -44,6 +101,11 @@ export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSavingRole, setIsSavingRole] = useState(false);
+
+  // Pagination / Lazy Loading State
+  const [visibleHumanCount, setVisibleHumanCount] = useState(10);
+  const [visibleBotCount, setVisibleBotCount] = useState(10);
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -54,26 +116,56 @@ export default function DashboardPage() {
           AxiosInstance.get("/calendar/all/meetings"),
           AxiosInstance.get("/users/profile"),
         ]);
-
         setMeetings(meetingsRes.data.meetings || []);
         setUserProfile(profileRes.data.user || null);
       } catch (error: any) {
         console.error("Dashboard Load Error:", error);
-        if (error.response?.status === 401) {
-          router.replace("/signup"); // Kick out if unauthorized
-        }
+        if (error.response?.status === 401) router.replace("/signup");
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchDashboardData();
   }, [router]);
 
-  // --- Helpers ---
+  // --- Handlers ---
   const handleLogout = () => {
-    localStorage.removeItem("clara_access_token"); // Adjust based on your exact auth setup
+    localStorage.removeItem("clara_access_token");
     router.replace("/signup");
+  };
+
+  const handleRoleSelection = async (selectedRole: string) => {
+    setIsSavingRole(true);
+    try {
+      // Assumes you have an endpoint to update the user's profile
+      await AxiosInstance.put("/users/role", { role: selectedRole });
+
+      // Update local state to dismiss the onboarding screen
+      setUserProfile((prev) => (prev ? { ...prev, role: selectedRole } : null));
+
+      // Optional: Immediately trigger a triage sync based on new role
+      await AxiosInstance.post("/calendar/sync", { role: selectedRole });
+      const meetingsRes = await AxiosInstance.get("/calendar/today");
+      setMeetings(meetingsRes.data.meetings || []);
+    } catch (error) {
+      console.error("Failed to save role:", error);
+    } finally {
+      setIsSavingRole(false);
+    }
+  };
+
+  const handleHumanScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight * 1.5) {
+      setVisibleHumanCount((prev) => prev + 10);
+    }
+  };
+
+  const handleBotScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight * 1.5) {
+      setVisibleBotCount((prev) => prev + 10);
+    }
   };
 
   const formatTime = (isoString: string) => {
@@ -84,32 +176,83 @@ export default function DashboardPage() {
     });
   };
 
+  // --- Derived Data ---
+  const humanMeetings = meetings.filter((m) => m.decision === "human");
+  const botMeetings = meetings.filter((m) => m.decision === "bot");
+
   // --- Animation Variants ---
   const containerVars = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+    show: { opacity: 1, transition: { staggerChildren: 0.05 } },
   };
-
   const itemVars : any = {
-    hidden: { opacity: 0, x: -20 },
+    hidden: { opacity: 0, y: 20 },
     show: {
       opacity: 1,
-      x: 0,
+      y: 0,
       transition: { type: "spring", stiffness: 300, damping: 24 },
     },
   };
 
+  // =========================================================================
+  // 1. ONBOARDING ROLE SELECTION (Renders if user exists but role is null)
+  // =========================================================================
+  if (!isLoading && userProfile && !userProfile.role) {
+    return (
+      <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative overflow-y-auto">
+        <div className="absolute inset-0 bg-purple-900/10 blur-[150px] pointer-events-none" />
+
+        <div className="max-w-5xl w-full bg-black/60 border border-white/10 rounded-3xl p-8 md:p-12 backdrop-blur-xl relative z-10 text-center shadow-2xl my-12">
+          <Bot size={48} className="text-purple-500 mx-auto mb-6" />
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
+            Initialize Clara Protocol
+          </h1>
+          <p className="text-zinc-400 text-lg max-w-2xl mx-auto mb-12">
+            To perfectly triage your schedule, Clara needs to understand your
+            operational priorities. Select your primary role below.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
+            {ROLES.map((role) => (
+              <button
+                key={role.id}
+                disabled={isSavingRole}
+                onClick={() => handleRoleSelection(role.id)}
+                className="group relative flex flex-col p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer overflow-hidden disabled:opacity-50"
+              >
+                <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors" />
+                <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center text-purple-400 mb-4 border border-white/5 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(147,51,234,0.1)]">
+                  {role.icon}
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">{role.id}</h3>
+                <p className="text-sm text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors">
+                  {role.desc}
+                </p>
+              </button>
+            ))}
+          </div>
+
+          {isSavingRole && (
+            <div className="mt-8 flex items-center justify-center gap-3 text-purple-400 font-mono text-sm animate-pulse">
+              <Activity size={16} /> CONFIGURING AGENT NEURAL NET...
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 2. MAIN DASHBOARD
+  // =========================================================================
   return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans relative overflow-x-hidden selection:bg-purple-500/30">
-      {/* --- Background Effects --- */}
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,#4c1d9511_1px,transparent_1px),linear-gradient(to_bottom,#4c1d9511_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none" />
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(147,51,234,0.15)_0%,rgba(0,0,0,0)_50%)] pointer-events-none" />
-      <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[150px] pointer-events-none" />
+    <div className="min-h-screen bg-black text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
+      <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-emerald-900/5 rounded-full blur-[150px] pointer-events-none" />
 
       {/* --- Header --- */}
-      <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-purple-500/20">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-          {/* Logo / Branding */}
+      <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30 shadow-[0_0_15px_rgba(147,51,234,0.2)]">
               <Activity className="text-purple-400" size={20} />
@@ -124,12 +267,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* User Profile Dropdown */}
           {userProfile && (
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all px-2 py-2 pr-4 rounded-full cursor-pointer"
+                className="flex items-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all px-2 py-2 pr-4 rounded-full cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-full bg-linear-to-br from-purple-500 to-pink-600 flex items-center justify-center font-bold text-white text-sm shadow-[0_0_10px_rgba(147,51,234,0.4)]">
                   {userProfile.name.charAt(0).toUpperCase()}
@@ -165,13 +307,12 @@ export default function DashboardPage() {
                         {userProfile.email}
                       </p>
                       <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-300 font-mono uppercase tracking-wider">
-                        <ShieldAlert size={12} />{" "}
-                        {userProfile.role || "Role: Unassigned"}
+                        <ShieldAlert size={12} /> {userProfile.role}
                       </div>
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors text-sm font-bold cursor-pointer"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold cursor-pointer"
                     >
                       <LogOut size={16} /> Disconnect Session
                     </button>
@@ -184,13 +325,12 @@ export default function DashboardPage() {
       </header>
 
       {/* --- Main Content --- */}
-      <main className="max-w-4xl mx-auto px-6 py-12 relative z-10">
-        {/* Page Title */}
-        <div className="mb-12">
-          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-linear-to-b from-white to-zinc-400 mb-3">
-            Today's Directive
+      <main className="max-w-7xl mx-auto px-6 py-10 relative z-10 h-[calc(100vh-80px)] flex flex-col">
+        <div className="mb-8 shrink-0">
+          <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">
+            Daily Triage
           </h2>
-          <p className="text-zinc-400 text-lg">
+          <p className="text-zinc-400 text-sm font-medium">
             {new Date().toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",
@@ -199,142 +339,169 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Loading State */}
         {isLoading ? (
-          <div className="py-24 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-6 shadow-[0_0_30px_rgba(147,51,234,0.3)]" />
-            <p className="font-mono text-sm tracking-[0.2em] text-purple-400/70 animate-pulse">
-              SYNCING CALENDAR FEED...
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="w-10 h-10 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-4" />
+            <p className="font-mono text-xs tracking-[0.2em] text-purple-400/70 animate-pulse">
+              SYNCING DATABANKS...
             </p>
           </div>
+        ) : meetings.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center bg-white/5 border border-white/10 rounded-3xl p-12 backdrop-blur-sm max-w-md">
+              <CalendarIcon size={48} className="mx-auto text-zinc-600 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">
+                Clear Schedule
+              </h3>
+              <p className="text-zinc-500 text-sm">
+                No operations required today. Clara is standing by.
+              </p>
+            </div>
+          </div>
         ) : (
-          <motion.div
-            variants={containerVars}
-            initial="hidden"
-            animate="show"
-            className="relative"
-          >
-            {/* Vertical Timeline Line */}
-            <div className="absolute left-[39px] md:left-[119px] top-4 bottom-4 w-px bg-linear-to-b from-purple-500/50 via-purple-500/10 to-transparent" />
-
-            {meetings.length === 0 ? (
-              <div className="py-20 text-center border border-white/5 rounded-3xl bg-[#05000a]/50 backdrop-blur-sm">
-                <CalendarIcon
-                  size={48}
-                  className="mx-auto text-zinc-600 mb-4"
-                />
-                <h3 className="text-2xl font-bold text-zinc-300 mb-2">
-                  Schedule Cleared
-                </h3>
-                <p className="text-zinc-500">
-                  No meetings found. Clara is standing by.
-                </p>
+          <div className="flex-1 grid lg:grid-cols-2 gap-8 overflow-hidden pb-4">
+            {/* --- COLUMN 1: HUMAN MEETINGS --- */}
+            <div className="flex flex-col h-full bg-[#050505]/50 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-md">
+              <div className="p-5 border-b border-white/5 bg-black/40 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                    <User size={16} className="text-emerald-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Your Agenda</h3>
+                </div>
+                <span className="bg-white/10 text-zinc-300 text-xs font-bold px-3 py-1 rounded-full">
+                  {humanMeetings.length}
+                </span>
               </div>
-            ) : (
-              <div className="space-y-8">
-                {meetings.map((meeting, index) => {
-                  const isBot = meeting.decision === "bot";
 
-                  return (
-                    <motion.div
-                      variants={itemVars}
-                      key={meeting.googleEventId}
-                      className="relative flex items-start gap-6 md:gap-8 group"
-                    >
-                      {/* Timeline Time (Hidden on very small screens, visible on md+) */}
-                      <div className="hidden md:block w-20 pt-4 text-right shrink-0">
-                        <span className="text-sm font-bold text-zinc-400">
-                          {formatTime(meeting.startTime)}
-                        </span>
-                      </div>
-
-                      {/* Timeline Node */}
-                      <div className="relative z-10 shrink-0 mt-5">
-                        <div
-                          className={`w-5 h-5 rounded-full border-4 border-black flex items-center justify-center ${
-                            isBot
-                              ? "bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)]"
-                              : "bg-zinc-600"
-                          }`}
+              <div
+                onScroll={handleHumanScroll}
+                className="flex-1 overflow-y-auto scrollbar-small p-5 space-y-4"
+              >
+                <Suspense fallback={<div>Loading cards...</div>}>
+                  <motion.div
+                    variants={containerVars}
+                    initial="hidden"
+                    animate="show"
+                  >
+                    {humanMeetings
+                      .slice(0, visibleHumanCount)
+                      .map((meeting) => (
+                        <motion.div
+                          variants={itemVars}
+                          key={meeting.googleEventId}
+                          className="bg-black border border-white/10 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors group mb-4"
                         >
-                          <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                        </div>
-                      </div>
-
-                      {/* Meeting Card */}
-                      <div
-                        className={`flex-1 rounded-2xl p-6 md:p-8 transition-all duration-300 border backdrop-blur-xl ${
-                          isBot
-                            ? "bg-[#0a0314]/80 border-purple-500/30 hover:border-purple-500/60 shadow-[0_0_30px_rgba(147,51,234,0.1)] hover:shadow-[0_0_40px_rgba(147,51,234,0.2)]"
-                            : "bg-[#050505]/80 border-white/5 hover:border-white/10 hover:bg-[#0a0a0a]"
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
-                          <div>
-                            {/* Mobile Time (Only shows on small screens) */}
-                            <span className="md:hidden text-xs font-bold text-purple-400 mb-2 block">
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <h4 className="font-bold text-white text-lg leading-tight group-hover:text-emerald-50 transition-colors">
+                              {meeting.title}
+                            </h4>
+                            <span className="shrink-0 text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md uppercase">
+                              Human
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs font-medium text-zinc-500 mb-4">
+                            <span className="flex items-center gap-1.5">
+                              <Clock size={14} className="text-emerald-400" />{" "}
                               {formatTime(meeting.startTime)}
                             </span>
-                            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight mb-2">
-                              {meeting.title}
-                            </h3>
-                            <div className="flex items-center gap-4 text-sm font-medium text-zinc-500">
-                              <span className="flex items-center gap-1.5">
-                                <Clock
-                                  size={14}
-                                  className={isBot ? "text-purple-400" : ""}
-                                />
-                                {formatTime(meeting.endTime)} (End)
-                              </span>
-                              {meeting.meetLink && (
-                                <a
-                                  href={meeting.meetLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors"
-                                >
-                                  <Video size={14} /> Meet Link
-                                </a>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Attendance Badge */}
-                          <div
-                            className={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                              isBot
-                                ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
-                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                            }`}
-                          >
-                            {isBot ? (
-                              <>
-                                <Bot size={14} /> Clara Proxy
-                              </>
-                            ) : (
-                              <>
-                                <User size={14} /> You Attend
-                              </>
+                            {meeting.meetLink && (
+                              <a
+                                href={meeting.meetLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center gap-1 text-blue-400 hover:underline"
+                              >
+                                <Video size={14} /> Link
+                              </a>
                             )}
                           </div>
-                        </div>
-
-                        {/* Analysis Box */}
-                        <div className="mt-6 bg-black/40 border border-white/5 rounded-xl p-4">
-                          <div className="flex items-center gap-2 text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">
-                            <AlignLeft size={14} /> System Directive
+                          <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                            <p className="text-xs text-zinc-400">
+                              <strong className="text-zinc-300">Reason:</strong>{" "}
+                              {meeting.reason}
+                            </p>
                           </div>
-                          <p className="text-sm text-zinc-300 leading-relaxed">
+                        </motion.div>
+                      ))}
+                    {humanMeetings.length === 0 && (
+                      <p className="text-center text-zinc-600 text-sm mt-10">
+                        No physical attendance required.
+                      </p>
+                    )}
+                  </motion.div>
+                </Suspense>
+              </div>
+            </div>
+
+            {/* --- COLUMN 2: BOT MEETINGS --- */}
+            <div className="flex flex-col h-full bg-[#0a0314]/50 border border-purple-500/20 rounded-3xl overflow-hidden backdrop-blur-md shadow-[0_0_50px_rgba(147,51,234,0.05)]">
+              <div className="p-5 border-b border-purple-500/20 bg-black/40 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center border border-purple-500/40 shadow-[0_0_10px_rgba(147,51,234,0.3)]">
+                    <Bot size={16} className="text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">
+                    Clara Directives
+                  </h3>
+                </div>
+                <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold px-3 py-1 rounded-full">
+                  {botMeetings.length}
+                </span>
+              </div>
+
+              <div
+                onScroll={handleBotScroll}
+                className="flex-1 overflow-y-auto scrollbar-small p-5 space-y-4 relative"
+              >
+                <Suspense fallback={<div>Loading cards...</div>}>
+                  <motion.div
+                    variants={containerVars}
+                    initial="hidden"
+                    animate="show"
+                  >
+                    {botMeetings.slice(0, visibleBotCount).map((meeting) => (
+                      <motion.div
+                        variants={itemVars}
+                        key={meeting.googleEventId}
+                        className="relative bg-[#05000a] border border-purple-500/30 rounded-2xl p-5 hover:border-purple-500/60 hover:bg-[#0a0514] transition-all group mb-4 overflow-hidden shadow-[0_5px_20px_rgba(0,0,0,0.5)]"
+                      >
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)]" />
+
+                        <div className="flex items-start justify-between gap-4 mb-3 pl-2">
+                          <h4 className="font-bold text-white text-lg leading-tight group-hover:text-purple-50 transition-colors">
+                            {meeting.title}
+                          </h4>
+                          <span className="shrink-0 text-xs font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded-md uppercase flex items-center gap-1.5">
+                            <Activity size={12} /> Proxy
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs font-medium text-zinc-500 mb-4 pl-2">
+                          <span className="flex items-center gap-1.5">
+                            <Clock size={14} className="text-purple-400" />{" "}
+                            {formatTime(meeting.startTime)}
+                          </span>
+                        </div>
+                        <div className="bg-black/60 rounded-lg p-3 border border-purple-500/10 pl-4 ml-2">
+                          <p className="text-xs text-zinc-400">
+                            <strong className="text-purple-300">
+                              Directive:
+                            </strong>{" "}
                             {meeting.reason}
                           </p>
                         </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                      </motion.div>
+                    ))}
+                    {botMeetings.length === 0 && (
+                      <p className="text-center text-purple-900 text-sm mt-10">
+                        Clara has no assigned proxies today.
+                      </p>
+                    )}
+                  </motion.div>
+                </Suspense>
               </div>
-            )}
-          </motion.div>
+            </div>
+          </div>
         )}
       </main>
     </div>
