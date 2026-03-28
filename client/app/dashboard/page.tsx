@@ -297,8 +297,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
-      <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="fixed top-[-20%] right-[-10%] w-200 h-200 bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] left-[-10%] w-150 h-150 bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
 
       <DashboardHeader
         setIsDropdownOpen={setIsDropdownOpen}
@@ -322,7 +322,7 @@ export default function DashboardPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-5xl bg-[#0a0314] border border-purple-500/30 rounded-3xl p-8 md:p-10 z-[101] shadow-[0_0_50px_rgba(147,51,234,0.15)] max-h-[90vh] overflow-y-auto scrollbar-small"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-5xl bg-[#0a0314] border border-purple-500/30 rounded-3xl p-8 md:p-10 z-101 shadow-[0_0_50px_rgba(147,51,234,0.15)] max-h-[90vh] overflow-y-auto scrollbar-small"
             >
               <button
                 onClick={() => setIsRoleModalOpen(false)}
@@ -675,7 +675,7 @@ export default function DashboardPage() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.4)] hover:shadow-[0_0_40px_rgba(147,51,234,0.6)] transition-shadow z-50 border border-white/10"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-linear-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.4)] hover:shadow-[0_0_40px_rgba(147,51,234,0.6)] transition-shadow z-50 border border-white/10"
       >
         <MessageSquare size={24} />
       </motion.button>
