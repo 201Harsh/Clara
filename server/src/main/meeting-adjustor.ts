@@ -5,7 +5,6 @@ export const meetingAdjustorSubagent: SubAgent = {
   description:
     "Analyzes the user's daily schedule to determine which meetings require human attendance and which can be attended by the bot proxy. Call this immediately when the user asks to adjust, triage, or organize meetings.",
 
-  // THE FIX: Swap Groq out for Gemini to bypass the 6k token limit
   model: "google-genai:gemini-2.5-flash-lite",
 
   systemPrompt: `You are the Meeting Adjustor Subagent. Your job is to make decisions, not ask questions.
