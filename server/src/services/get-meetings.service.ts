@@ -18,16 +18,13 @@ const getMeetingsService = async ({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // 2. Fetch the EXISTING database record to see Clara's past decisions
   const existingRecord = await CalendarEventModel.findOne({
     userId,
     date: today,
   });
   const existingMeetings = existingRecord ? existingRecord.meetings : [];
 
-  // 3. Map over Google data and MERGE it with the existing DB data
   const formattedMeetings = rawMeetings.map((meeting: any) => {
-    // Check if Clara already triaged this specific meeting
     const savedMeeting = existingMeetings.find(
       (em: any) => em.googleEventId === meeting.id,
     );
@@ -38,7 +35,6 @@ const getMeetingsService = async ({
       startTime: meeting.startTime,
       endTime: meeting.endTime,
       meetLink: meeting.link,
-      // PRESERVE Clara's decision if it exists, otherwise default to human
       decision: savedMeeting ? savedMeeting.decision : "human",
       reason: savedMeeting
         ? savedMeeting.reason
@@ -47,8 +43,6 @@ const getMeetingsService = async ({
     };
   });
 
-  // 4. Update the DB with the merged data
-  // FIXED THE MONGOOSE WARNING: Replaced `new: true` with `returnDocument: 'after'`
   await CalendarEventModel.findOneAndUpdate(
     { userId, date: today },
     { $set: { meetings: formattedMeetings } },
