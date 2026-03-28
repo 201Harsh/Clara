@@ -4,7 +4,6 @@ import { z } from "zod";
 import CalendarEventModel from "../models/calendar-model.js";
 import { meetingAdjustorSubagent } from "./meeting-adjustor.js";
 
-// --- 1. THE DATABASE TOOL (UPGRADED TO BATCH UPDATES) ---
 const updateScheduleDatabaseTool = tool(
   async (input, config) => {
     const userId = config?.context?.userId;
@@ -16,7 +15,6 @@ const updateScheduleDatabaseTool = tool(
     try {
       let modifiedCount = 0;
 
-      // Loop through the array of updates the LLM provides
       for (const update of input.updates) {
         const result = await CalendarEventModel.updateOne(
           {
@@ -63,7 +61,6 @@ const updateScheduleDatabaseTool = tool(
   },
 );
 
-// --- 2. CLARA PRIME (THE ORCHESTRATOR) ---
 const apiKey = process.env.GOOGLE_API_KEY as string;
 
 const researchInstructions = `You are Clara, an elite, autonomous AI Chief of Staff.
@@ -83,7 +80,7 @@ const agent = createDeepAgent({
   model: "google-genai:gemini-2.5-flash-lite",
   systemPrompt: researchInstructions,
   contextSchema,
-  tools: [updateScheduleDatabaseTool], // Swapped to the new batch tool
+  tools: [updateScheduleDatabaseTool],
   subagents: [meetingAdjustorSubagent],
 });
 
