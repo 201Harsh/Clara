@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user-model.js";
-import getMeetingsService from "../services/get-meetings.service.js";
+import CalendarEventModel from "../models/calendar-model.js";
+import { getTodaysMeetings } from "../services/calendar.service.js";
 
 export const GetAllMeetings = async (
   req: Request,
@@ -27,22 +28,52 @@ export const GetAllMeetings = async (
       });
     }
 
-    const GetMeetings = await getMeetingsService({ User, userId });
+    // UPDATED: Pass userId into the service for the auto-refresh listener
+    const rawMeetings = await getTodaysMeetings(
+      userId,
+      User.googleAccessToken,
+      User.googleRefreshToken || "",
+    );
 
-    if (!GetMeetings) {
-      return res.status(404).json({
-        error: "Meetings not found",
-      });
-    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const formattedMeetings = rawMeetings.map((meeting: any) => ({
+      googleEventId: meeting.id,
+      title: meeting.title,
+      startTime: meeting.startTime,
+      endTime: meeting.endTime,
+      meetLink: meeting.link,
+      decision: "human",
+      reason: "Default: Manual attendance.",
+      status: "scheduled",
+    }));
+
+    await CalendarEventModel.findOneAndUpdate(
+      { userId, date: today },
+      { $set: { meetings: formattedMeetings } },
+      { upsert: true, new: true },
+    );
 
     return res.status(200).json({
       message: "Meetings fetched successfully.",
-      meetings: GetMeetings,
+      meetings: formattedMeetings,
     });
   } catch (error: any) {
-    console.error("GetAllMeetings Error:", error);
+    console.error("GetAllMeetings Error:", error.message);
+
+    // NEW: Catch specific Google OAuth expiration crashes
+    if (
+      error.message.includes("invalid authentication credentials") ||
+      error.code === 401
+    ) {
+      return res.status(401).json({
+        error: "Google session expired. Please reconnect your account.",
+      });
+    }
+
     return res.status(500).json({
-      error: "Internal server error: " + error.message,
+      error: "Internal server error.",
     });
   }
 };
