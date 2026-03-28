@@ -11,7 +11,6 @@ export const ClaraAgent = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ error: "Prompt is required." });
     }
 
-    // Extract User ID from auth middleware
     const userPayload = (req as any).user;
     const userId = userPayload?.userId || userPayload?.id || userPayload?._id;
 
@@ -19,18 +18,15 @@ export const ClaraAgent = async (req: Request, res: Response): Promise<any> => {
       return res.status(401).json({ error: "Unauthorized access." });
     }
 
-    // 1. Fetch User Identity
     const dbUser = await UserModel.findById(userId);
     const userName = dbUser?.name || "Boss";
     const role = dbUser?.role || "Unassigned";
 
-    // 2. Fetch Today's Live Schedule
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const record = await CalendarEventModel.findOne({ userId, date: today });
     const schedule = record ? record.meetings : [];
 
-    // 3. Ignite Clara with full context
     const responseText = await claraAgent({
       prompt,
       userId,
