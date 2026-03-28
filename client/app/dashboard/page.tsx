@@ -30,7 +30,6 @@ import {
 import AxiosInstance from "../config/AxiosInstance";
 import DashboardHeader from "../Components/DashboardHeader";
 
-// --- Types ---
 interface Meeting {
   googleEventId: string;
   title: string;
@@ -54,7 +53,6 @@ interface ChatMessage {
   content: string;
 }
 
-// --- Predefined Roles ---
 const ROLES = [
   {
     id: "Founder / CEO",
@@ -106,7 +104,6 @@ const ROLES = [
 export default function DashboardPage() {
   const router = useRouter();
 
-  // --- State ---
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -114,11 +111,9 @@ export default function DashboardPage() {
   const [isSavingRole, setIsSavingRole] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
-  // Pagination / Lazy Loading State
   const [visibleHumanCount, setVisibleHumanCount] = useState(10);
   const [visibleBotCount, setVisibleBotCount] = useState(10);
 
-  // Clara Agent Chat State
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -130,7 +125,6 @@ export default function DashboardPage() {
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // --- Data Fetching ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
@@ -151,14 +145,12 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [router]);
 
-  // Auto-scroll chat
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMessages, isAgentTyping, isChatOpen]);
 
-  // --- Handlers ---
   const handleLogout = () => {
     localStorage.removeItem("clara_access_token");
     router.replace("/signup");
@@ -195,7 +187,6 @@ export default function DashboardPage() {
       const res = await AxiosInstance.post("/ai/clara", {
         prompt: userMessage,
       });
-      // Extract the string based on API structure (handling both 'message' and 'response' keys)
       const replyText =
         res.data.message || res.data.response || "Task executed successfully.";
 
@@ -204,7 +195,6 @@ export default function DashboardPage() {
         { role: "clara", content: replyText },
       ]);
 
-      // If Clara modified the database, silently refresh the meetings array
       const meetingsRes = await AxiosInstance.get("/calendar/all/meetings");
       setMeetings(meetingsRes.data.meetings || []);
     } catch (error) {
@@ -259,9 +249,7 @@ export default function DashboardPage() {
     },
   };
 
-  // =========================================================================
-  // 1. ONBOARDING ROLE SELECTION
-  // =========================================================================
+
   if (!isLoading && userProfile && !userProfile.role) {
     return (
       <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative overflow-y-auto">
@@ -307,9 +295,6 @@ export default function DashboardPage() {
     );
   }
 
-  // =========================================================================
-  // 2. MAIN DASHBOARD
-  // =========================================================================
   return (
     <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
       <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
@@ -323,7 +308,6 @@ export default function DashboardPage() {
         handleLogout={handleLogout}
       />
 
-      {/* --- CHANGE ROLE MODAL --- */}
       <AnimatePresence>
         {isRoleModalOpen && (
           <>
