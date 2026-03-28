@@ -1,61 +1,64 @@
 import { createDeepAgent } from "deepagents";
-import { tool } from "@langchain/core/tools"; // FIXED IMPORT
+import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import CalendarEventModel from "../models/calendar-model.js";
 import { meetingAdjustorSubagent } from "./meeting-adjustor.js";
 
-// --- 1. THE DATABASE TOOL ---
-const updateMeetingDecisionTool = tool(
-  async (
-    // FIXED: Explicitly typing the input to satisfy TypeScript strict mode
-    input: { googleEventId: string; decision: string; reason: string },
-    // FIXED: Explicitly typing config to bypass the 'any' error
-    config: any,
-  ) => {
-    // Destructure the securely typed input
-    const { googleEventId, decision, reason } = input;
+// --- 1. THE DATABASE TOOL (UPGRADED TO BATCH UPDATES) ---
+const updateScheduleDatabaseTool = tool(
+  async (input, config) => {
     const userId = config?.context?.userId;
-
     if (!userId) return "ERROR: Unauthorized. No userId found in context.";
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     try {
-      const result = await CalendarEventModel.updateOne(
-        { userId, date: today, "meetings.googleEventId": googleEventId },
-        {
-          $set: {
-            "meetings.$.decision": decision,
-            "meetings.$.reason": reason,
-          },
-        },
-      );
+      let modifiedCount = 0;
 
-      if (result.modifiedCount > 0) {
-        return `SUCCESS: Meeting ${googleEventId} updated to ${decision}.`;
+      // Loop through the array of updates the LLM provides
+      for (const update of input.updates) {
+        const result = await CalendarEventModel.updateOne(
+          {
+            userId,
+            date: today,
+            "meetings.googleEventId": update.googleEventId,
+          },
+          {
+            $set: {
+              "meetings.$.decision": update.decision,
+              "meetings.$.reason": update.reason,
+            },
+          },
+        );
+        if (result.modifiedCount > 0) modifiedCount++;
       }
-      return `FAILED: Could not find meeting ${googleEventId} in today's schedule.`;
+
+      return `SUCCESS: ${modifiedCount} meetings have been successfully updated in the database.`;
     } catch (error: any) {
       return `FAILED: Database error - ${error.message}`;
     }
   },
   {
-    name: "update_meeting_decision",
+    name: "update_schedule_database",
     description:
-      "Updates a specific meeting's attendance decision in the database. Use this to apply the triage plan.",
+      "Updates the attendance decisions for multiple meetings in the database at once. You MUST use this tool to apply the triage plan.",
     schema: z.object({
-      googleEventId: z
-        .string()
-        .describe("The exact googleEventId of the meeting from the schedule."),
-      decision: z
-        .enum(["human", "bot", "skipped"])
-        .describe("Who will attend the meeting."),
-      reason: z
-        .string()
-        .describe(
-          "A short, 1-sentence explanation of why this decision was made.",
-        ),
+      updates: z
+        .array(
+          z.object({
+            googleEventId: z
+              .string()
+              .describe("The exact googleEventId of the meeting."),
+            decision: z
+              .enum(["human", "bot", "skipped"])
+              .describe("Who will attend: 'human' or 'bot'."),
+            reason: z
+              .string()
+              .describe("A short 1-sentence reason for this decision."),
+          }),
+        )
+        .describe("An array of meeting updates to apply to the database."),
     }),
   },
 );
@@ -66,21 +69,21 @@ const apiKey = process.env.GOOGLE_API_KEY as string;
 const researchInstructions = `You are Clara, an elite, autonomous AI Chief of Staff.
 
 CRITICAL DIRECTIVES:
-1. NEVER ask the user to classify their meetings or ask which ones are important. YOU are the AI; YOU do the work.
-2. If the user asks you to "adjust", "triage", or "organize" their meetings, you MUST immediately delegate the analysis to the 'meeting-adjustor' subagent using your task() tool.
-3. Once the subagent returns its decisions, you MUST immediately use the 'update_meeting_decision' tool to apply those changes to the database.
-4. After the database is updated, reply to the user with a sharp, professional summary of what you changed.`;
+1. NEVER ask the user to classify their meetings. YOU do the analysis based on their role.
+2. If the user asks to "adjust", "triage", or "organize" their day, delegate the analysis to the 'meeting-adjustor' subagent. Do NOT do the triage analysis yourself in the description field.
+3. ONCE THE SUBAGENT RETURNS THE PLAN, YOU MUST IMMEDIATELY CALL THE 'update_schedule_database' TOOL. Pass the array of changes to it.
+4. DO NOT tell the user you updated their schedule until AFTER you have received the SUCCESS message from the 'update_schedule_database' tool.`;
 
 const contextSchema = z.object({
   apiKey: z.string(),
-  userId: z.string(), // Mandating userId so the tool can use it securely
+  userId: z.string(),
 });
 
 const agent = createDeepAgent({
   model: "google-genai:gemini-2.5-flash-lite",
   systemPrompt: researchInstructions,
   contextSchema,
-  tools: [updateMeetingDecisionTool],
+  tools: [updateScheduleDatabaseTool], // Swapped to the new batch tool
   subagents: [meetingAdjustorSubagent],
 });
 
@@ -106,7 +109,7 @@ const claraAgent = async ({
       - Role: ${role}
       - Today's Schedule: ${JSON.stringify(schedule)}
       
-      Instructions: Use this context to inform your decisions and provide it to your subagents.
+      Instructions: Use this context to inform your decisions.
     `;
 
     const combinedMessage = `${dynamicContext}\n\nUSER PROMPT:\n${prompt}`;
