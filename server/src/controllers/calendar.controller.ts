@@ -41,7 +41,6 @@ export const GetAllMeetings = async (
   } catch (error: any) {
     console.error("GetAllMeetings Error:", error.message);
 
-    // NEW: Catch specific Google OAuth expiration crashes
     if (
       error.message.includes("invalid authentication credentials") ||
       error.code === 401
