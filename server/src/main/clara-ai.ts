@@ -1,5 +1,6 @@
 import { createDeepAgent } from "deepagents";
 import { z } from "zod";
+import { meetingAdjustorSubagent } from "./meeting-adjustor.js";
 
 const apiKey = process.env.GOOGLE_API_KEY as string;
 
@@ -16,6 +17,7 @@ const agent = createDeepAgent({
   model: "google-genai:gemini-2.5-flash-lite",
   systemPrompt: researchInstructions,
   contextSchema,
+  subagents: [meetingAdjustorSubagent],
 });
 
 interface ClaraParams {
