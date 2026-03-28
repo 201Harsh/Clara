@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 
-// --- Types ---
 interface Meeting {
   googleEventId: string;
   title: string;
@@ -46,7 +45,6 @@ interface UserProfile {
   role: string | null;
 }
 
-// --- Predefined Roles ---
 const ROLES = [
   {
     id: "Founder / CEO",
@@ -98,7 +96,6 @@ const ROLES = [
 export default function DashboardPage() {
   const router = useRouter();
 
-  // --- State ---
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -106,11 +103,9 @@ export default function DashboardPage() {
   const [isSavingRole, setIsSavingRole] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
-  // Pagination / Lazy Loading State
   const [visibleHumanCount, setVisibleHumanCount] = useState(10);
   const [visibleBotCount, setVisibleBotCount] = useState(10);
 
-  // --- Data Fetching ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
@@ -131,7 +126,6 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [router]);
 
-  // --- Handlers ---
   const handleLogout = () => {
     localStorage.removeItem("clara_access_token");
     router.replace("/signup");
@@ -140,14 +134,11 @@ export default function DashboardPage() {
   const handleRoleSelection = async (selectedRole: string) => {
     setIsSavingRole(true);
     try {
-      // 1. Update the role in the database
       await AxiosInstance.put("/users/role", { role: selectedRole });
 
-      // 2. Update local state to close modals/onboarding
       setUserProfile((prev) => (prev ? { ...prev, role: selectedRole } : null));
       setIsRoleModalOpen(false);
 
-      // 3. Re-fetch the meetings using the ONLY route we have
       const meetingsRes = await AxiosInstance.get("/calendar/all/meetings");
       setMeetings(meetingsRes.data.meetings || []);
     } catch (error) {
@@ -157,7 +148,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Infinite Scroll Logic
   const handleHumanScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
@@ -180,16 +170,14 @@ export default function DashboardPage() {
     });
   };
 
-  // --- Derived Data ---
   const humanMeetings = meetings.filter((m) => m.decision === "human");
   const botMeetings = meetings.filter((m) => m.decision === "bot");
 
-  // --- Animation Variants ---
   const containerVars = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.05 } },
   };
-  const itemVars : any = {
+  const itemVars: any = {
     hidden: { opacity: 0, y: 20 },
     show: {
       opacity: 1,
@@ -198,9 +186,6 @@ export default function DashboardPage() {
     },
   };
 
-  // =========================================================================
-  // 1. ONBOARDING ROLE SELECTION
-  // =========================================================================
   if (!isLoading && userProfile && !userProfile.role) {
     return (
       <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative overflow-y-auto">
@@ -246,12 +231,8 @@ export default function DashboardPage() {
     );
   }
 
-  // =========================================================================
-  // 2. MAIN DASHBOARD
-  // =========================================================================
   return (
     <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
-      {/* Background Ambience */}
       <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
       <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
 
@@ -339,7 +320,6 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* --- CHANGE ROLE MODAL --- */}
       <AnimatePresence>
         {isRoleModalOpen && (
           <>
@@ -405,7 +385,6 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* --- Main Content Split Deck --- */}
       <main className="max-w-7xl mx-auto px-6 py-10 relative z-10 h-[calc(100vh-80px)] flex flex-col">
         <div className="mb-8 shrink-0 flex items-center justify-between">
           <div>
@@ -446,7 +425,6 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="flex-1 grid lg:grid-cols-2 gap-8 overflow-hidden pb-4">
-            {/* --- COLUMN 1: HUMAN MEETINGS --- */}
             <div className="flex flex-col h-full bg-[#050505]/60 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
               <div className="p-5 border-b border-white/5 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
                 <div className="flex items-center gap-3">
@@ -531,7 +509,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* --- COLUMN 2: BOT MEETINGS --- */}
             <div className="flex flex-col h-full bg-[#0a0314]/60 border border-purple-500/20 rounded-3xl overflow-hidden backdrop-blur-xl shadow-[0_0_50px_rgba(147,51,234,0.05)]">
               <div className="p-5 border-b border-purple-500/20 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
                 <div className="flex items-center gap-3">
