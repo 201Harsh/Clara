@@ -33,7 +33,6 @@ export const RegisterAndLoginUsingGoogle = async (
   }
 };
 
-
 export const GetProfile = async (req: Request, res: Response): Promise<any> => {
   try {
     const userPayload = (req as any).user;
