@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,7 +9,10 @@ import {
   Video,
   User,
   Bot,
+  ChevronDown,
+  LogOut,
   Activity,
+  ShieldAlert,
   Briefcase,
   Code,
   Megaphone,
@@ -21,10 +24,13 @@ import {
   Layers,
   X,
   AlignLeft,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 import DashboardHeader from "../Components/DashboardHeader";
 
+// --- Types ---
 interface Meeting {
   googleEventId: string;
   title: string;
@@ -43,6 +49,12 @@ interface UserProfile {
   role: string | null;
 }
 
+interface ChatMessage {
+  role: "user" | "clara";
+  content: string;
+}
+
+// --- Predefined Roles ---
 const ROLES = [
   {
     id: "Founder / CEO",
@@ -94,6 +106,7 @@ const ROLES = [
 export default function DashboardPage() {
   const router = useRouter();
 
+  // --- State ---
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,9 +114,23 @@ export default function DashboardPage() {
   const [isSavingRole, setIsSavingRole] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
+  // Pagination / Lazy Loading State
   const [visibleHumanCount, setVisibleHumanCount] = useState(10);
   const [visibleBotCount, setVisibleBotCount] = useState(10);
 
+  // Clara Agent Chat State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      role: "clara",
+      content: "Clara network connected. How can I adjust your schedule today?",
+    },
+  ]);
+  const [isAgentTyping, setIsAgentTyping] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // --- Data Fetching ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
@@ -124,6 +151,14 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [router]);
 
+  // Auto-scroll chat
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, isAgentTyping, isChatOpen]);
+
+  // --- Handlers ---
   const handleLogout = () => {
     localStorage.removeItem("clara_access_token");
     router.replace("/signup");
@@ -133,7 +168,6 @@ export default function DashboardPage() {
     setIsSavingRole(true);
     try {
       await AxiosInstance.put("/users/role", { role: selectedRole });
-
       setUserProfile((prev) => (prev ? { ...prev, role: selectedRole } : null));
       setIsRoleModalOpen(false);
 
@@ -143,6 +177,47 @@ export default function DashboardPage() {
       console.error("Failed to save role:", error);
     } finally {
       setIsSavingRole(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!chatInput.trim()) return;
+
+    const userMessage = chatInput.trim();
+    setChatInput("");
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "user", content: userMessage },
+    ]);
+    setIsAgentTyping(true);
+
+    try {
+      const res = await AxiosInstance.post("/ai/clara", {
+        prompt: userMessage,
+      });
+      // Extract the string based on API structure (handling both 'message' and 'response' keys)
+      const replyText =
+        res.data.message || res.data.response || "Task executed successfully.";
+
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "clara", content: replyText },
+      ]);
+
+      // If Clara modified the database, silently refresh the meetings array
+      const meetingsRes = await AxiosInstance.get("/calendar/all/meetings");
+      setMeetings(meetingsRes.data.meetings || []);
+    } catch (error) {
+      console.error("Agent comm error:", error);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "clara",
+          content: "Connection to core disrupted. Please try again.",
+        },
+      ]);
+    } finally {
+      setIsAgentTyping(false);
     }
   };
 
@@ -184,6 +259,9 @@ export default function DashboardPage() {
     },
   };
 
+  // =========================================================================
+  // 1. ONBOARDING ROLE SELECTION
+  // =========================================================================
   if (!isLoading && userProfile && !userProfile.role) {
     return (
       <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative overflow-y-auto">
@@ -229,10 +307,13 @@ export default function DashboardPage() {
     );
   }
 
+  // =========================================================================
+  // 2. MAIN DASHBOARD
+  // =========================================================================
   return (
     <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
-      <div className="fixed top-[-20%] right-[-10%] w-200 h-200 bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] left-[-10%] w-150 h-150 bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
 
       <DashboardHeader
         setIsDropdownOpen={setIsDropdownOpen}
@@ -242,6 +323,7 @@ export default function DashboardPage() {
         handleLogout={handleLogout}
       />
 
+      {/* --- CHANGE ROLE MODAL --- */}
       <AnimatePresence>
         {isRoleModalOpen && (
           <>
@@ -256,7 +338,7 @@ export default function DashboardPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-5xl bg-[#0a0314] border border-purple-500/30 rounded-3xl p-8 md:p-10 z-101 shadow-[0_0_50px_rgba(147,51,234,0.15)] max-h-[90vh] overflow-y-auto scrollbar-small"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-5xl bg-[#0a0314] border border-purple-500/30 rounded-3xl p-8 md:p-10 z-[101] shadow-[0_0_50px_rgba(147,51,234,0.15)] max-h-[90vh] overflow-y-auto scrollbar-small"
             >
               <button
                 onClick={() => setIsRoleModalOpen(false)}
@@ -307,6 +389,7 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
+      {/* --- Main Dashboard View --- */}
       <main className="max-w-7xl mx-auto px-6 py-10 relative z-10 h-[calc(100vh-80px)] flex flex-col">
         <div className="mb-8 shrink-0 flex items-center justify-between">
           <div>
@@ -507,6 +590,111 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* --- CLARA FLOATING AGENT INTERFACE --- */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="fixed bottom-24 right-6 w-[380px] h-[500px] max-h-[80vh] bg-[#0a0314]/90 backdrop-blur-2xl border border-purple-500/40 rounded-3xl shadow-[0_10px_50px_rgba(147,51,234,0.2)] flex flex-col z-50 overflow-hidden"
+          >
+            {/* Chat Header */}
+            <div className="px-5 py-4 border-b border-purple-500/20 bg-black/40 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center relative">
+                  <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-400 rounded-full border border-black" />
+                  <Bot size={16} className="text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white leading-none">
+                    Clara Link
+                  </h3>
+                  <p className="text-[10px] text-purple-400 mt-1 uppercase tracking-wider">
+                    Agent Online
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="text-zinc-500 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-small">
+              {chatMessages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] p-3 rounded-2xl text-sm ${
+                      msg.role === "user"
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-none"
+                        : "bg-white/5 border border-purple-500/20 text-zinc-300 rounded-bl-none"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {isAgentTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-white/5 border border-purple-500/20 text-zinc-300 p-3 rounded-2xl rounded-bl-none flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" />
+                    <span
+                      className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.15s" }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.3s" }}
+                    />
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Chat Input */}
+            <div className="p-4 border-t border-purple-500/20 bg-black/40 shrink-0">
+              <div className="relative flex items-center bg-[#05000a] border border-purple-500/30 rounded-full focus-within:border-purple-400/60 transition-colors pr-1.5">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                  placeholder="Message Clara..."
+                  className="flex-1 bg-transparent border-none outline-none text-sm text-white px-4 py-3 placeholder:text-zinc-600"
+                  disabled={isAgentTyping}
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!chatInput.trim() || isAgentTyping}
+                  className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white hover:bg-purple-500 disabled:opacity-50 transition-colors"
+                >
+                  <Send size={14} className="ml-0.5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Action Button */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.4)] hover:shadow-[0_0_40px_rgba(147,51,234,0.6)] transition-shadow z-50 border border-white/10"
+      >
+        <MessageSquare size={24} />
+      </motion.button>
     </div>
   );
 }
