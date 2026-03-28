@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user-model.js";
-import CalendarEventModel from "../models/calendar-model.js";
-import { getTodaysMeetings } from "../services/calendar.service.js";
 import getMeetingsService from "../services/get-meetings.service.js";
 
 export const GetAllMeetings = async (
