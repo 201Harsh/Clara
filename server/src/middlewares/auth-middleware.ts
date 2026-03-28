@@ -8,7 +8,7 @@ export const AuthMiddleware = (
 ) => {
   try {
     const token =
-      req.cookies?.iris_access || req.headers.authorization?.split(" ")[1];
+      req.cookies?.clara_token || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       res.status(401).json({
@@ -17,7 +17,7 @@ export const AuthMiddleware = (
       return;
     }
 
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!);
+    const decodedToken = jwt.verify(token, process.env.CLARA_TOKEN_SECRET!);
 
     req.user = decodedToken;
 
