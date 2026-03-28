@@ -19,6 +19,13 @@ export const AuthMiddleware = (
 
     const decodedToken = jwt.verify(token, process.env.CLARA_TOKEN_SECRET!);
 
+    if (!decodedToken) {
+      res.status(401).json({
+        message: "Invalid/Expired Token!",
+      });
+      return;
+    }
+
     req.user = decodedToken;
 
     next();
