@@ -9,10 +9,7 @@ import {
   Video,
   User,
   Bot,
-  ChevronDown,
-  LogOut,
   Activity,
-  ShieldAlert,
   Briefcase,
   Code,
   Megaphone,
@@ -25,7 +22,6 @@ import {
   X,
   AlignLeft,
   MessageSquare,
-  Send,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 import DashboardHeader from "../Components/DashboardHeader";
