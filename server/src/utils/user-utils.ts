@@ -6,7 +6,7 @@ const CLARA_EXPIRY = process.env.CLARA_TOKEN_EXPIRY as string;
 
 const CLARA_TOKEN_EXPIRY = (process.env.CLARA_TOKEN_EXPIRY as string) || "7d";
 
-export const generateTokens = (userId: string | mongoose.Types.ObjectId) => {
+export const generateToken = (userId: string | mongoose.Types.ObjectId) => {
   const refreshToken = jwt.sign({ userId }, CLARA_EXPIRY, {
     expiresIn: CLARA_TOKEN_EXPIRY as any,
   });
@@ -14,7 +14,7 @@ export const generateTokens = (userId: string | mongoose.Types.ObjectId) => {
   return refreshToken;
 };
 
-export const setRefreshCookie = (res: Response, Token: string) => {
+export const setTokenCookie = (res: Response, Token: string) => {
   res.cookie("clara_token", Token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
