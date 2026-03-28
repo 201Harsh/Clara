@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { Response } from "express";
 import mongoose from "mongoose";
 
-const CLARA_EXPIRY = process.env.CLARA_TOKEN_EXPIRY as string;
+const CLARA_EXPIRY = process.env.CLARA_TOKEN_SECRET as string;
 
 const CLARA_TOKEN_EXPIRY = (process.env.CLARA_TOKEN_EXPIRY as string) || "7d";
 
