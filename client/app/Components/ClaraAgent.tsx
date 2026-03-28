@@ -22,7 +22,6 @@ const ClaraAgent = ({
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="fixed bottom-24 right-6 w-95 h-125 max-h-[80vh] bg-[#0a0314]/90 backdrop-blur-2xl border border-purple-500/40 rounded-3xl shadow-[0_10px_50px_rgba(147,51,234,0.2)] flex flex-col z-50 overflow-hidden"
           >
-            {/* Chat Header */}
             <div className="px-5 py-4 border-b border-purple-500/20 bg-black/40 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center relative">
@@ -46,7 +45,6 @@ const ClaraAgent = ({
               </button>
             </div>
 
-            {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-small">
               {chatMessages.map((msg : any, idx : number) => (
                 <div
@@ -82,7 +80,6 @@ const ClaraAgent = ({
               <div ref={chatEndRef} />
             </div>
 
-            {/* Chat Input */}
             <div className="p-4 border-t border-purple-500/20 bg-black/40 shrink-0">
               <div className="relative flex items-center bg-[#05000a] border border-purple-500/30 rounded-full focus-within:border-purple-400/60 transition-colors pr-1.5">
                 <input
