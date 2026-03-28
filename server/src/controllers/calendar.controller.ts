@@ -8,7 +8,6 @@ export const GetAllMeetings = async (
   res: Response,
 ): Promise<any> => {
   try {
-    // 1. Correctly extract the User ID from the JWT payload
     const userPayload = (req as any).user;
     const userId = userPayload?.userId || userPayload?.id || userPayload?._id;
 
@@ -22,7 +21,6 @@ export const GetAllMeetings = async (
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 2. Ensure Google Auth is present
     if (!User.googleAccessToken) {
       return res.status(400).json({
         error:
@@ -30,7 +28,6 @@ export const GetAllMeetings = async (
       });
     }
 
-    // 3. Fetch fresh meetings from Google Calendar
     const rawMeetings = await getTodaysMeetings(
       User.googleAccessToken,
       User.googleRefreshToken || "",
@@ -39,7 +36,6 @@ export const GetAllMeetings = async (
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 4. Default everything to "human" per your new flow
     const formattedMeetings = rawMeetings.map((meeting: any) => ({
       googleEventId: meeting.id,
       title: meeting.title,
@@ -51,14 +47,12 @@ export const GetAllMeetings = async (
       status: "scheduled",
     }));
 
-    // 5. Save this baseline to the DB so Clara Prime has context for the chat
     await CalendarEventModel.findOneAndUpdate(
       { userId, date: today },
       { $set: { meetings: formattedMeetings } },
       { upsert: true, new: true },
     );
 
-    // 6. Return to the dashboard
     return res.status(200).json({
       message: "Meetings fetched successfully.",
       meetings: formattedMeetings,
