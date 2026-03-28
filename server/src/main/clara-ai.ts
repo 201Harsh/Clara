@@ -3,12 +3,10 @@ import { z } from "zod";
 
 const apiKey = process.env.GOOGLE_API_KEY as string;
 
-// The static base personality of Clara
 const researchInstructions = `You are Clara, an elite, highly professional AI Chief of Staff.
 Your job is to assist your user in managing their daily schedule, adjusting meetings, and acting as their proxy.
 Keep your responses sharp, concise, and highly professional. Do not use Markdown unless absolutely necessary.`;
 
-// The context schema ensures any tools we add later securely receive the userId
 const contextSchema = z.object({
   apiKey: z.string(),
   userId: z.string(),
@@ -36,7 +34,6 @@ const claraAgent = async ({
   schedule,
 }: ClaraParams) => {
   try {
-    // Inject the user's specific reality right now
     const dynamicContext = `
       CURRENT USER REALITY:
       - Name: ${userName}
@@ -46,7 +43,6 @@ const claraAgent = async ({
       Instructions: Use the context above to inform your response.
     `;
 
-    // THE FIX: Bundle the context and the prompt into a single User message
     const combinedMessage = `${dynamicContext}\n\nUSER PROMPT:\n${prompt}`;
 
     const response = await agent.invoke(
