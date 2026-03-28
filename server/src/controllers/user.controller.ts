@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import UserModel from "../models/user-model.js";
 import { generateToken, setTokenCookie } from "../utils/user-utils.js";
 
