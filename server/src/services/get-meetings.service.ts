@@ -8,7 +8,9 @@ const getMeetingsService = async ({
   User: any;
   userId: string;
 }) => {
+  // UPDATED: Pass userId into the service for the auto-refresh listener
   const rawMeetings = await getTodaysMeetings(
+    userId,
     User.googleAccessToken,
     User.googleRefreshToken || "",
   );
@@ -34,7 +36,6 @@ const getMeetingsService = async ({
   );
 
   return formattedMeetings;
-
 };
 
 export default getMeetingsService;

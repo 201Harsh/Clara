@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user-model.js";
-import CalendarEventModel from "../models/calendar-model.js";
-import { getTodaysMeetings } from "../services/calendar.service.js";
+import getMeetingsService from "../services/get-meetings.service.js";
 
 export const GetAllMeetings = async (
   req: Request,
@@ -28,36 +27,16 @@ export const GetAllMeetings = async (
       });
     }
 
-    // UPDATED: Pass userId into the service for the auto-refresh listener
-    const rawMeetings = await getTodaysMeetings(
-      userId,
-      User.googleAccessToken,
-      User.googleRefreshToken || "",
-    );
+    const meetings = await getMeetingsService({ User, userId });
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const formattedMeetings = rawMeetings.map((meeting: any) => ({
-      googleEventId: meeting.id,
-      title: meeting.title,
-      startTime: meeting.startTime,
-      endTime: meeting.endTime,
-      meetLink: meeting.link,
-      decision: "human",
-      reason: "Default: Manual attendance.",
-      status: "scheduled",
-    }));
-
-    await CalendarEventModel.findOneAndUpdate(
-      { userId, date: today },
-      { $set: { meetings: formattedMeetings } },
-      { upsert: true, new: true },
-    );
+    if (!meetings)
+      return res.status(404).json({
+        error: "No Meetings Found.",
+      });
 
     return res.status(200).json({
       message: "Meetings fetched successfully.",
-      meetings: formattedMeetings,
+      meetings: meetings,
     });
   } catch (error: any) {
     console.error("GetAllMeetings Error:", error.message);
