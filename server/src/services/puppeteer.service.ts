@@ -29,7 +29,7 @@ export const launchClaraInfiltrator = async (
       // NOTE: Replace 'YourUsername' with your actual Windows folder name!
       // Also, remember to use double slashes \\ in Windows paths.
       userDataDir:
-        "C:\\Users\\YourUsername\\AppData\\Local\\Google\\Chrome\\User Data",
+        "C:\\Users\\pande\\AppData\\Local\\Google\\Chrome\\User Data",
 
       args: [
         // 3. Tell it exactly which profile to load (Default, Profile 1, Profile 2, etc.)
