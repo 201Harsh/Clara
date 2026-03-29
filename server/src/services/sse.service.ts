@@ -1,6 +1,5 @@
 import { Response } from "express";
 
-// Stores active connections mapped by userId
 const clients = new Map<string, Response>();
 
 export const addSseClient = (userId: string, res: Response) => {
@@ -13,7 +12,6 @@ export const removeSseClient = (userId: string) => {
   console.log(`[SSE] Clara Uplink disconnected for user: ${userId}`);
 };
 
-// Use this function anywhere in your backend to shout to the frontend!
 export const broadcastToUser = (
   userId: string,
   eventType: string,
