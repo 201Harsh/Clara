@@ -15,8 +15,6 @@ export const startMeetingCronJob = () => {
       const dailyRecords = await CalendarEventModel.find({ date: today });
 
       for (const record of dailyRecords) {
-        let scheduleUpdated = false;
-
         const userIdStr = record.userId.toString();
 
         for (const meeting of record.meetings) {
@@ -33,17 +31,33 @@ export const startMeetingCronJob = () => {
             ) {
               console.log(`[BOT INITIATION] Target: ${meeting.title}`);
 
-              meeting.status = "infiltrated";
-              scheduleUpdated = true;
+              // 1. Force the database update explicitly (Bypasses Mongoose array tracking bugs)
+              await CalendarEventModel.updateOne(
+                {
+                  _id: record._id,
+                  "meetings.googleEventId": meeting.googleEventId,
+                },
+                { $set: { "meetings.$.status": "infiltrated" } },
+              );
 
-              await CronJobModel.create({
-                userId: userIdStr,
-                googleEventId: meeting.googleEventId,
-                meetingTitle: meeting.title,
-                meetLink: meeting.meetLink,
-                status: "triggered",
-              });
+              // 2. Create the Cron Deployment Log
+              try {
+                await CronJobModel.create({
+                  userId: userIdStr,
+                  googleEventId: meeting.googleEventId,
+                  meetingTitle: meeting.title,
+                  meetLink: meeting.meetLink,
+                  status: "triggered",
+                });
+                console.log(`[DB] Cron Log created for: ${meeting.title}`);
+              } catch (cronErr) {
+                console.error(
+                  "[DB ERROR] Failed to save CronJobModel:",
+                  cronErr,
+                );
+              }
 
+              // 3. Broadcast to the UI
               broadcastToUser(userIdStr, "bot_deployed", {
                 meetingTitle: meeting.title,
                 meetLink: meeting.meetLink,
@@ -51,12 +65,9 @@ export const startMeetingCronJob = () => {
                 message: "Clara has initiated meeting infiltration.",
               });
 
+              // TODO: Puppeteer Launch goes here next!
             }
           }
-        }
-
-        if (scheduleUpdated) {
-          await record.save();
         }
       }
     } catch (error) {

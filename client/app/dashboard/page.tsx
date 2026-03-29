@@ -155,7 +155,7 @@ export default function DashboardPage() {
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
     // withCredentials tells the browser to send the HTTP-Only clara_token cookie!
-    const eventSource = new EventSource(`${API_BASE_URL}/api/sse/stream`, {
+    const eventSource = new EventSource(`${API_BASE_URL}/sse/stream`, {
       withCredentials: true,
     });
 
