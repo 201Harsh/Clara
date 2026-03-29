@@ -6,18 +6,15 @@ import { meetingAdjustorSubagent } from "./meeting-adjustor.js";
 
 // --- TOOL 1: Update Attendance ---
 const updateScheduleDatabaseTool = tool(
-  async (input, config) => {
-    console.log("\n🔥 [TOOL FIRED] update_schedule_database");
-
-    const userId = config?.context?.userId;
-    if (!userId) return "ERROR: Unauthorized. No userId found in context.";
+  async (input) => {
+    console.log("\n🔥 [TOOL] Running update_schedule_database...");
 
     try {
       let modifiedCount = 0;
       for (const update of input.updates) {
-        // REMOVED 'date: today'. It causes silent failures due to UTC/IST timezone mismatches.
+        // FIX: Search ONLY by the globally unique Google Event ID. No more timezone/userId mismatches.
         const result = await CalendarEventModel.updateOne(
-          { userId, "meetings.googleEventId": update.googleEventId },
+          { "meetings.googleEventId": update.googleEventId },
           {
             $set: {
               "meetings.$.decision": update.decision,
@@ -28,10 +25,10 @@ const updateScheduleDatabaseTool = tool(
         if (result.modifiedCount > 0) modifiedCount++;
       }
 
-      console.log(`✅ [TOOL SUCCESS] Modified ${modifiedCount} records.`);
+      console.log(`✅ [DB] Updated ${modifiedCount} meetings to BOT status.`);
       return `SUCCESS: ${modifiedCount} meetings have been successfully updated in the database.`;
     } catch (error: any) {
-      console.error(`❌ [TOOL FAILED]`, error.message);
+      console.error(`❌ [DB ERROR]`, error.message);
       return `FAILED: Database error - ${error.message}`;
     }
   },
@@ -59,18 +56,16 @@ const updateScheduleDatabaseTool = tool(
 
 // --- TOOL 2: Reschedule Meeting ---
 const rescheduleMeetingTool = tool(
-  async (input, config) => {
-    console.log("\n🔥 [TOOL FIRED] reschedule_meeting");
-    console.log("Target ID:", input.googleEventId);
-    console.log("New Start:", input.newStartTime);
-
-    const userId = config?.context?.userId;
-    if (!userId) return "ERROR: Unauthorized.";
+  async (input) => {
+    console.log("\n🔥 [TOOL] Running reschedule_meeting...");
+    console.log(
+      `Target ID: ${input.googleEventId} | New Start: ${input.newStartTime}`,
+    );
 
     try {
-      // REMOVED 'date: today'
+      // FIX: Search ONLY by the globally unique Google Event ID.
       const result = await CalendarEventModel.updateOne(
-        { userId, "meetings.googleEventId": input.googleEventId },
+        { "meetings.googleEventId": input.googleEventId },
         {
           $set: {
             "meetings.$.startTime": input.newStartTime,
@@ -80,18 +75,18 @@ const rescheduleMeetingTool = tool(
       );
 
       console.log(
-        `📊 DB Matched: ${result.matchedCount} | Modified: ${result.modifiedCount}`,
+        `📊 [DB RESULT] Matched: ${result.matchedCount} | Modified: ${result.modifiedCount}`,
       );
 
       if (result.modifiedCount > 0) {
-        return `SUCCESS: Meeting rescheduled to start at ${input.newStartTime}.`;
+        return `SUCCESS: Meeting successfully shifted to start at ${input.newStartTime}.`;
       } else if (result.matchedCount > 0) {
-        return `FAILED: Found the meeting, but the new times were identical to the old times.`;
+        return `FAILED: Found the meeting, but the database says it is already scheduled for that exact time.`;
       } else {
         return `FAILED: Could not find any meeting with ID ${input.googleEventId} in the database.`;
       }
     } catch (error: any) {
-      console.error(`❌ [TOOL FAILED]`, error.message);
+      console.error(`❌ [DB ERROR]`, error.message);
       return `FAILED: Database error - ${error.message}`;
     }
   },
@@ -121,9 +116,8 @@ const researchInstructions = `You are Clara, an elite, autonomous AI Chief of St
 
 CRITICAL DIRECTIVES:
 1. YOU MUST USE YOUR TOOLS. NEVER output a message saying a task is complete unless you have physically fired the tool and received a 'SUCCESS' message back.
-2. If the tool returns a 'FAILED' message, you must tell the user exactly why it failed. Do not lie.
-3. If the user asks to DELAY, PUSH BACK, or RESCHEDULE, trigger 'reschedule_meeting'.
-4. If the user asks to TRIAGE or ADJUST attendance, delegate to 'meeting-adjustor' then trigger 'update_schedule_database'.`;
+2. If the user asks to DELAY, PUSH BACK, or RESCHEDULE, trigger 'reschedule_meeting'.
+3. If the user asks to TRIAGE or ADJUST attendance, delegate to 'meeting-adjustor' then trigger 'update_schedule_database'.`;
 
 const contextSchema = z.object({
   apiKey: z.string(),
