@@ -2,11 +2,9 @@ import schedule from "node-schedule";
 import CalendarEventModel from "../models/calendar-model.js";
 import CronJobModel from "../models/cron-model.js";
 
-// --- 1. Schedule a Single Target ---
 export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
   const jobName = meeting.googleEventId;
 
-  // If Clara reschedules a meeting, cancel the old alarm first
   if (schedule.scheduledJobs[jobName]) {
     schedule.scheduledJobs[jobName].cancel();
   }
@@ -14,10 +12,8 @@ export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
   const meetingStartTime = new Date(meeting.startTime);
   const now = new Date();
 
-  // If the meeting is already in the past, ignore it
   if (meetingStartTime <= now) return;
 
-  // Set the exact alarm clock for the meeting start time
   schedule.scheduleJob(jobName, meetingStartTime, async () => {
     console.log(`\n=================================================`);
     console.log(`[BOT INITIATION] Target: ${meeting.title}`);
@@ -25,13 +21,11 @@ export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
     console.log(`=================================================\n`);
 
     try {
-      // 1. Update Calendar Status
       await CalendarEventModel.updateOne(
         { "meetings.googleEventId": meeting.googleEventId },
         { $set: { "meetings.$.status": "infiltrated" } },
       );
 
-      // 2. Save the DB Log
       await CronJobModel.create({
         userId: userIdStr,
         googleEventId: meeting.googleEventId,
@@ -42,7 +36,6 @@ export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
 
       console.log(`[DB] Infiltration logged successfully.`);
 
-      // TODO: Puppeteer Launch goes here next!
     } catch (error) {
       console.error("[INFILTRATION ERROR] Database update failed:", error);
     }
@@ -53,14 +46,12 @@ export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
   );
 };
 
-// --- 2. Boot-Up Sequence ---
 export const initializeAllScheduledBots = async () => {
   console.log("⚡ [System] Booting up Clara Scheduler...");
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Find ALL meetings for today
     const dailyRecords = await CalendarEventModel.find({ date: today });
 
     let queuedCount = 0;
@@ -69,7 +60,6 @@ export const initializeAllScheduledBots = async () => {
       const userIdStr = record.userId.toString();
 
       for (const meeting of record.meetings) {
-        // Find the ones marked 'bot' that haven't happened yet
         if (
           meeting.decision === "bot" &&
           meeting.status === "scheduled" &&
