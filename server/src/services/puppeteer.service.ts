@@ -1,12 +1,11 @@
-// Import vanilla puppeteer and the wrapper explicitly to fix TS errors
 import vanillaPuppeteer from "puppeteer";
 import { addExtra } from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
-// Manually wrap puppeteer so TypeScript understands the types perfectly
-const puppeteer = addExtra(vanillaPuppeteer);
+// FIX 1: Cast as 'any' to bypass the outdated TypeScript definitions in the wrapper
+const puppeteer = addExtra(vanillaPuppeteer as any);
 
-// Equip stealth camouflage to bypass Google Meet bot-detection
+// Equip stealth camouflage
 puppeteer.use(StealthPlugin());
 
 export const launchClaraInfiltrator = async (
@@ -17,14 +16,14 @@ export const launchClaraInfiltrator = async (
 
   try {
     const browser = await puppeteer.launch({
-      headless: false, // Keep false so you can watch her work on your screen
+      headless: false,
       defaultViewport: null,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-notifications",
-        "--use-fake-ui-for-media-stream", // Auto-accepts Mic/Camera prompts
-        "--use-fake-device-for-media-stream", // Feeds a silent/black screen
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
       ],
     });
 
@@ -40,7 +39,7 @@ export const launchClaraInfiltrator = async (
       delay: 100,
     });
 
-    // 2. The Ninja Move: Use keyboard shortcuts to kill Mic & Cam (Ctrl+D / Ctrl+E)
+    // 2. The Ninja Move: Kill Mic & Cam
     console.log(`🔇 [PUPPETEER] Killing Mic and Camera...`);
     await page.keyboard.down("Control");
     await page.keyboard.press("d");
@@ -53,9 +52,9 @@ export const launchClaraInfiltrator = async (
     // 3. Knock on the door
     console.log(`🚪 [PUPPETEER] Clicking Join...`);
 
-    // Using XPath because Google changes their CSS class names constantly
-    const joinButtons = await page.$x(
-      "//span[contains(text(), 'Ask to join') or contains(text(), 'Join now')]",
+    // FIX 2: Use the modern Puppeteer XPath syntax since $x is deprecated
+    const joinButtons = await page.$$(
+      "::-p-xpath(//span[contains(text(), 'Ask to join') or contains(text(), 'Join now')])",
     );
 
     if (joinButtons.length > 0) {
@@ -67,8 +66,6 @@ export const launchClaraInfiltrator = async (
       );
       await page.keyboard.press("Enter");
     }
-
-    // We leave the browser open so Clara stays in the meeting.
   } catch (error) {
     console.error(`❌ [PUPPETEER ERROR] Mission Failed:`, error);
   }
