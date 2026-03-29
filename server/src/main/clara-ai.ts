@@ -77,7 +77,6 @@ const contextSchema = z.object({
 });
 
 const agent = createDeepAgent({
-  // FIXED: Valid Groq Model
   model: "groq:openai/gpt-oss-120b",
   systemPrompt: researchInstructions,
   contextSchema,
