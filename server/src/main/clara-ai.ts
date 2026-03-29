@@ -7,21 +7,17 @@ import { meetingAdjustorSubagent } from "./meeting-adjustor.js";
 // --- TOOL 1: Update Attendance ---
 const updateScheduleDatabaseTool = tool(
   async (input, config) => {
+    console.log("\n🔥 [TOOL FIRED] update_schedule_database");
+
     const userId = config?.context?.userId;
     if (!userId) return "ERROR: Unauthorized. No userId found in context.";
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     try {
       let modifiedCount = 0;
       for (const update of input.updates) {
+        // REMOVED 'date: today'. It causes silent failures due to UTC/IST timezone mismatches.
         const result = await CalendarEventModel.updateOne(
-          {
-            userId,
-            date: today,
-            "meetings.googleEventId": update.googleEventId,
-          },
+          { userId, "meetings.googleEventId": update.googleEventId },
           {
             $set: {
               "meetings.$.decision": update.decision,
@@ -31,8 +27,11 @@ const updateScheduleDatabaseTool = tool(
         );
         if (result.modifiedCount > 0) modifiedCount++;
       }
+
+      console.log(`✅ [TOOL SUCCESS] Modified ${modifiedCount} records.`);
       return `SUCCESS: ${modifiedCount} meetings have been successfully updated in the database.`;
     } catch (error: any) {
+      console.error(`❌ [TOOL FAILED]`, error.message);
       return `FAILED: Database error - ${error.message}`;
     }
   },
@@ -61,15 +60,17 @@ const updateScheduleDatabaseTool = tool(
 // --- TOOL 2: Reschedule Meeting ---
 const rescheduleMeetingTool = tool(
   async (input, config) => {
+    console.log("\n🔥 [TOOL FIRED] reschedule_meeting");
+    console.log("Target ID:", input.googleEventId);
+    console.log("New Start:", input.newStartTime);
+
     const userId = config?.context?.userId;
     if (!userId) return "ERROR: Unauthorized.";
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     try {
+      // REMOVED 'date: today'
       const result = await CalendarEventModel.updateOne(
-        { userId, date: today, "meetings.googleEventId": input.googleEventId },
+        { userId, "meetings.googleEventId": input.googleEventId },
         {
           $set: {
             "meetings.$.startTime": input.newStartTime,
@@ -78,18 +79,26 @@ const rescheduleMeetingTool = tool(
         },
       );
 
+      console.log(
+        `📊 DB Matched: ${result.matchedCount} | Modified: ${result.modifiedCount}`,
+      );
+
       if (result.modifiedCount > 0) {
-        return `SUCCESS: Meeting rescheduled to start at ${input.newStartTime}. The Cron job will now trigger based on this new time.`;
+        return `SUCCESS: Meeting rescheduled to start at ${input.newStartTime}.`;
+      } else if (result.matchedCount > 0) {
+        return `FAILED: Found the meeting, but the new times were identical to the old times.`;
+      } else {
+        return `FAILED: Could not find any meeting with ID ${input.googleEventId} in the database.`;
       }
-      return "FAILED: Could not find that meeting to reschedule.";
     } catch (error: any) {
+      console.error(`❌ [TOOL FAILED]`, error.message);
       return `FAILED: Database error - ${error.message}`;
     }
   },
   {
     name: "reschedule_meeting",
     description:
-      "Shifts the start and end time of a specific meeting. Use this if the user asks to push a meeting back (e.g., 'delay by 5 mins') or bring it forward.",
+      "Shifts the start and end time of a specific meeting. Use this if the user asks to push a meeting back or bring it forward.",
     schema: z.object({
       googleEventId: z
         .string()
@@ -97,7 +106,7 @@ const rescheduleMeetingTool = tool(
       newStartTime: z
         .string()
         .describe(
-          "The new start time in full ISO-8601 string format (e.g., 2026-03-28T08:00:00.000Z). You MUST calculate this accurately based on the current time.",
+          "The new start time in full ISO-8601 string format (e.g., 2026-03-29T10:10:00.000Z). Calculate this accurately based on the current time.",
         ),
       newEndTime: z
         .string()
@@ -111,10 +120,10 @@ const apiKey = process.env.GOOGLE_API_KEY as string;
 const researchInstructions = `You are Clara, an elite, autonomous AI Chief of Staff.
 
 CRITICAL DIRECTIVES:
-1. NEVER ask the user to classify their meetings. YOU do the analysis based on their role.
-2. If the user asks to triage their day, delegate to the 'meeting-adjustor' subagent, then run 'update_schedule_database'.
-3. If the user asks to DELAY, PUSH BACK, or RESCHEDULE a meeting, you MUST use the 'reschedule_meeting' tool. Calculate the new ISO string times accurately.
-4. ONLY confirm to the user AFTER receiving a SUCCESS message from your tools.`;
+1. YOU MUST USE YOUR TOOLS. NEVER output a message saying a task is complete unless you have physically fired the tool and received a 'SUCCESS' message back.
+2. If the tool returns a 'FAILED' message, you must tell the user exactly why it failed. Do not lie.
+3. If the user asks to DELAY, PUSH BACK, or RESCHEDULE, trigger 'reschedule_meeting'.
+4. If the user asks to TRIAGE or ADJUST attendance, delegate to 'meeting-adjustor' then trigger 'update_schedule_database'.`;
 
 const contextSchema = z.object({
   apiKey: z.string(),
@@ -122,7 +131,7 @@ const contextSchema = z.object({
 });
 
 const agent = createDeepAgent({
-  model: "google-genai:gemini-2.5-flash", // Swapped to an officially supported Groq LPU model
+  model: "google-genai:gemini-2.5-flash",
   systemPrompt: researchInstructions,
   contextSchema,
   tools: [updateScheduleDatabaseTool, rescheduleMeetingTool],
@@ -149,15 +158,17 @@ const claraAgent = async ({
       CURRENT USER REALITY:
       - Name: ${userName}
       - Role: ${role}
-      - Current Server Time: ${new Date().toISOString()}
+      - Current Server Time (ISO): ${new Date().toISOString()}
       - Today's Schedule: ${JSON.stringify(schedule)}
     `;
 
     const combinedMessage = `${dynamicContext}\n\nUSER PROMPT:\n${prompt}`;
+
     const response = await agent.invoke(
       { messages: [{ role: "user", content: combinedMessage }] },
       { context: { apiKey, userId } },
     );
+
     const lastMessage = response.messages[response.messages.length - 1];
     return lastMessage?.content || "Task executed successfully.";
   } catch (error) {
