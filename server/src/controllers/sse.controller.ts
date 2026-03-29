@@ -7,7 +7,7 @@ export const establishSseStream = async (
   res: Response,
 ): Promise<any> => {
   // Native EventSource requires the token in the query string
-  const token = req.query.token as string;
+  const token = req.query.clara_token as string;
 
   if (!token) {
     return res.status(401).json({ error: "Missing authentication token." });
