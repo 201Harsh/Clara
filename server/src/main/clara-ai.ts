@@ -3,16 +3,20 @@ import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import CalendarEventModel from "../models/calendar-model.js";
 import { meetingAdjustorSubagent } from "./meeting-adjustor.js";
+// FIX: Import the scheduler so Clara can set/reset alarms!
+import { scheduleBotInfiltration } from "../cron/meeting-bot.cron.js";
 
 // --- TOOL 1: Update Attendance ---
 const updateScheduleDatabaseTool = tool(
-  async (input) => {
+  async (input, config) => {
     console.log("\n🔥 [TOOL] Running update_schedule_database...");
+
+    const userId = config?.context?.userId;
+    if (!userId) return "ERROR: Unauthorized.";
 
     try {
       let modifiedCount = 0;
       for (const update of input.updates) {
-        // FIX: Search ONLY by the globally unique Google Event ID. No more timezone/userId mismatches.
         const result = await CalendarEventModel.updateOne(
           { "meetings.googleEventId": update.googleEventId },
           {
@@ -22,7 +26,20 @@ const updateScheduleDatabaseTool = tool(
             },
           },
         );
-        if (result.modifiedCount > 0) modifiedCount++;
+
+        if (result.modifiedCount > 0) {
+          modifiedCount++;
+          // FIX: If Clara marks it as "bot", arm the alarm clock immediately!
+          if (update.decision === "bot") {
+            const updatedRecord = await CalendarEventModel.findOne(
+              { "meetings.googleEventId": update.googleEventId },
+              { "meetings.$": 1 },
+            );
+            if (updatedRecord && updatedRecord.meetings[0]) {
+              scheduleBotInfiltration(userId, updatedRecord.meetings[0]);
+            }
+          }
+        }
       }
 
       console.log(`✅ [DB] Updated ${modifiedCount} meetings to BOT status.`);
@@ -56,14 +73,16 @@ const updateScheduleDatabaseTool = tool(
 
 // --- TOOL 2: Reschedule Meeting ---
 const rescheduleMeetingTool = tool(
-  async (input) => {
+  async (input, config) => {
     console.log("\n🔥 [TOOL] Running reschedule_meeting...");
     console.log(
       `Target ID: ${input.googleEventId} | New Start: ${input.newStartTime}`,
     );
 
+    const userId = config?.context?.userId;
+    if (!userId) return "ERROR: Unauthorized.";
+
     try {
-      // FIX: Search ONLY by the globally unique Google Event ID.
       const result = await CalendarEventModel.updateOne(
         { "meetings.googleEventId": input.googleEventId },
         {
@@ -79,6 +98,16 @@ const rescheduleMeetingTool = tool(
       );
 
       if (result.modifiedCount > 0) {
+        // FIX: Grab the new meeting time and reset the Node.js alarm clock!
+        const updatedRecord = await CalendarEventModel.findOne(
+          { "meetings.googleEventId": input.googleEventId },
+          { "meetings.$": 1 },
+        );
+
+        if (updatedRecord && updatedRecord.meetings[0]) {
+          scheduleBotInfiltration(userId, updatedRecord.meetings[0]);
+        }
+
         return `SUCCESS: Meeting successfully shifted to start at ${input.newStartTime}.`;
       } else if (result.matchedCount > 0) {
         return `FAILED: Found the meeting, but the database says it is already scheduled for that exact time.`;
@@ -101,7 +130,7 @@ const rescheduleMeetingTool = tool(
       newStartTime: z
         .string()
         .describe(
-          "The new start time in full ISO-8601 string format (e.g., 2026-03-29T10:10:00.000Z). Calculate this accurately based on the current time.",
+          "The new start time in full ISO-8601 string format. Calculate this accurately based on the current time.",
         ),
       newEndTime: z
         .string()
