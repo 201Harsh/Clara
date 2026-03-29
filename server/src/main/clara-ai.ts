@@ -4,7 +4,6 @@ import { z } from "zod";
 import CalendarEventModel from "../models/calendar-model.js";
 import { scheduleBotInfiltration } from "../cron/meeting-bot.cron.js";
 
-// --- TOOL 1: Update Attendance ---
 const updateScheduleDatabaseTool = tool(
   async (input, config) => {
     console.log("\n🔥 [TOOL] Running update_schedule_database...");
@@ -64,7 +63,6 @@ const updateScheduleDatabaseTool = tool(
   },
 );
 
-// --- TOOL 2: Reschedule Meeting ---
 const rescheduleMeetingTool = tool(
   async (input, config) => {
     console.log("\n🔥 [TOOL] Running reschedule_meeting...");
@@ -115,7 +113,6 @@ const rescheduleMeetingTool = tool(
 
 const apiKey = process.env.GOOGLE_API_KEY as string;
 
-// WE REWROTE THE BRAIN TO BYPASS THE SUBAGENT
 const researchInstructions = `You are Clara, an elite, autonomous AI Chief of Staff.
 
 CRITICAL DIRECTIVES:
@@ -136,7 +133,6 @@ const agent = createDeepAgent({
   systemPrompt: researchInstructions,
   contextSchema,
   tools: [updateScheduleDatabaseTool, rescheduleMeetingTool],
-  // FIX: Subagents removed entirely to kill 3-minute latency
 });
 
 interface ClaraParams {
