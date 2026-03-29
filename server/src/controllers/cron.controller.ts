@@ -10,11 +10,11 @@ export const getCronLogs = async (
     const userId = userPayload?.userId || userPayload?.id || userPayload?._id;
 
     if (!userId) {
-      res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: "Unauthorized Access" });
       return;
     }
 
-    // Fetch the 20 most recent bot deployments for this user
+    // Fetch the latest 20 infiltration logs
     const logs = await CronJobModel.find({ userId })
       .sort({ createdAt: -1 })
       .limit(20);
