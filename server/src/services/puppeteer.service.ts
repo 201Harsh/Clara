@@ -1,5 +1,10 @@
-import puppeteer from "puppeteer-extra";
+// Import vanilla puppeteer and the wrapper explicitly to fix TS errors
+import vanillaPuppeteer from "puppeteer";
+import { addExtra } from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
+
+// Manually wrap puppeteer so TypeScript understands the types perfectly
+const puppeteer = addExtra(vanillaPuppeteer);
 
 // Equip stealth camouflage to bypass Google Meet bot-detection
 puppeteer.use(StealthPlugin());
@@ -64,7 +69,6 @@ export const launchClaraInfiltrator = async (
     }
 
     // We leave the browser open so Clara stays in the meeting.
-    // In the future, we will add logic here to close the browser when the meeting ends.
   } catch (error) {
     console.error(`❌ [PUPPETEER ERROR] Mission Failed:`, error);
   }
