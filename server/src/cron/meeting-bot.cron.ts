@@ -1,7 +1,6 @@
 import cron from "node-cron";
 import CalendarEventModel from "../models/calendar-model.js";
 import CronJobModel from "../models/cron-model.js";
-import { broadcastToUser } from "../services/sse.service.js";
 
 export const startMeetingCronJob = () => {
   cron.schedule("* * * * *", async () => {
@@ -29,9 +28,17 @@ export const startMeetingCronJob = () => {
               meetingStartTime >= now &&
               meetingStartTime <= fiveMinutesFromNow
             ) {
-              console.log(`[BOT INITIATION] Target: ${meeting.title}`);
+              console.log(
+                `\n=================================================`,
+              );
+              console.log(`[BOT INITIATION SEQUENCE STRUCK]`);
+              console.log(`Target: ${meeting.title}`);
+              console.log(`Time: ${meetingStartTime.toLocaleTimeString()}`);
+              console.log(
+                `=================================================\n`,
+              );
 
-              // 1. Force the database update explicitly (Bypasses Mongoose array tracking bugs)
+              // 1. Force the database update explicitly (Bypasses Mongoose `.save()` bugs)
               await CalendarEventModel.updateOne(
                 {
                   _id: record._id,
@@ -56,14 +63,6 @@ export const startMeetingCronJob = () => {
                   cronErr,
                 );
               }
-
-              // 3. Broadcast to the UI
-              broadcastToUser(userIdStr, "bot_deployed", {
-                meetingTitle: meeting.title,
-                meetLink: meeting.meetLink,
-                status: "infiltrated",
-                message: "Clara has initiated meeting infiltration.",
-              });
 
               // TODO: Puppeteer Launch goes here next!
             }
