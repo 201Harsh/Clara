@@ -61,7 +61,7 @@ const updateScheduleDatabaseTool = tool(
   },
 );
 
-const apiKey = process.env.GOOGLE_API_KEY as string;
+const apiKey = process.env.GROQ_API_KEY as string;
 
 const researchInstructions = `You are Clara, an elite, autonomous AI Chief of Staff.
 
@@ -77,7 +77,7 @@ const contextSchema = z.object({
 });
 
 const agent = createDeepAgent({
-  model: "google-genai:gemini-2.5-flash-lite",
+  model: "groq:openai/gpt-oss-120b",
   systemPrompt: researchInstructions,
   contextSchema,
   tools: [updateScheduleDatabaseTool],

@@ -1,9 +1,9 @@
 import { google } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
-import UserModel from "../models/user-model.js"; // Import your user model
+import UserModel from "../models/user-model.js"; 
 
 export const getTodaysMeetings = async (
-  userId: string, // NEW: Pass the userId so we can update the DB
+  userId: string, 
   googleAccessToken: string,
   googleRefreshToken: string,
 ) => {
@@ -17,11 +17,9 @@ export const getTodaysMeetings = async (
     refresh_token: googleRefreshToken,
   });
 
-  // THE MAGIC FIX: Automatically catch refreshed tokens and save them to MongoDB
   oauth2Client.on("tokens", async (tokens) => {
     if (tokens.access_token) {
       const updateData: any = { googleAccessToken: tokens.access_token };
-      // Google only sends the refresh token sometimes, so only update if it exists
       if (tokens.refresh_token) {
         updateData.googleRefreshToken = tokens.refresh_token;
       }
