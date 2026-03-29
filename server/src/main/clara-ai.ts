@@ -192,6 +192,8 @@ const claraAgent = async ({
       { context: { apiKey, userId } },
     );
 
+    console.log(response)
+
     const lastMessage = response.messages[response.messages.length - 1];
     return lastMessage?.content || "Task executed successfully.";
   } catch (error) {
