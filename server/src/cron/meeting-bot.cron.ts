@@ -6,6 +6,7 @@ export const startMeetingCronJob = () => {
   cron.schedule("* * * * *", async () => {
     try {
       const now = new Date();
+      // Look ahead 5 minutes
       const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60000);
 
       const today = new Date();
@@ -17,9 +18,10 @@ export const startMeetingCronJob = () => {
         const userIdStr = record.userId.toString();
 
         for (const meeting of record.meetings) {
+          // Look for meetings marked as 'bot' that haven't been infiltrated yet
           if (
             meeting.decision === "bot" &&
-            meeting.status === "scheduled" &&
+            meeting.status !== "infiltrated" &&
             meeting.meetLink
           ) {
             const meetingStartTime = new Date(meeting.startTime);
@@ -29,17 +31,11 @@ export const startMeetingCronJob = () => {
               meetingStartTime <= fiveMinutesFromNow
             ) {
               console.log(
-                `\n=================================================`,
-              );
-              console.log(`[BOT INITIATION SEQUENCE STRUCK]`);
-              console.log(`Target: ${meeting.title}`);
-              console.log(`Time: ${meetingStartTime.toLocaleTimeString()}`);
-              console.log(
-                `=================================================\n`,
+                `\n[BOT INITIATION] Target: ${meeting.title} at ${meetingStartTime.toLocaleTimeString()}`,
               );
 
-              // 1. Force the database update explicitly (Bypasses Mongoose `.save()` bugs)
-              await CalendarEventModel.updateOne(
+              // 1. Force update the Calendar array
+              const updateRes = await CalendarEventModel.updateOne(
                 {
                   _id: record._id,
                   "meetings.googleEventId": meeting.googleEventId,
@@ -47,7 +43,11 @@ export const startMeetingCronJob = () => {
                 { $set: { "meetings.$.status": "infiltrated" } },
               );
 
-              // 2. Create the Cron Deployment Log
+              if (updateRes.modifiedCount > 0) {
+                console.log(`[DB] Calendar status updated to 'infiltrated'.`);
+              }
+
+              // 2. Create the standalone deployment log
               try {
                 await CronJobModel.create({
                   userId: userIdStr,
@@ -56,7 +56,7 @@ export const startMeetingCronJob = () => {
                   meetLink: meeting.meetLink,
                   status: "triggered",
                 });
-                console.log(`[DB] Cron Log created for: ${meeting.title}`);
+                console.log(`[DB] Cron Log created successfully.`);
               } catch (cronErr) {
                 console.error(
                   "[DB ERROR] Failed to save CronJobModel:",

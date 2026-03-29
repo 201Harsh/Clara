@@ -22,12 +22,48 @@ import {
   X,
   AlignLeft,
   MessageSquare,
-  Radio,
+  Terminal,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 import DashboardHeader from "../Components/DashboardHeader";
 import ClaraAgent from "../Components/ClaraAgent";
 
+// --- Custom Countdown Component ---
+const CountdownTimer = ({ targetTime }: { targetTime: string }) => {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const diff = new Date(targetTime).getTime() - new Date().getTime();
+      if (diff <= 0) {
+        setTimeLeft("PROXY INITIATED");
+        return;
+      }
+      const h = Math.floor(diff / (1000 * 60 * 60))
+        .toString()
+        .padStart(2, "0");
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+        .toString()
+        .padStart(2, "0");
+      const s = Math.floor((diff % (1000 * 60)) / 1000)
+        .toString()
+        .padStart(2, "0");
+      setTimeLeft(`T-MINUS ${h}:${m}:${s}`);
+    };
+
+    updateTimer(); // Initial call
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [targetTime]);
+
+  return (
+    <span className="font-mono text-xs tracking-widest text-cyan-400 bg-cyan-950/50 border border-cyan-500/30 px-2 py-1 rounded flex items-center gap-1.5">
+      <Terminal size={10} /> {timeLeft}
+    </span>
+  );
+};
+
+// --- Interfaces & Constants ---
 interface Meeting {
   googleEventId: string;
   title: string;
@@ -123,12 +159,6 @@ export default function DashboardPage() {
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Custom Alert State for SSE
-  const [liveAlert, setLiveAlert] = useState<{
-    title: string;
-    message: string;
-  } | null>(null);
-
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
@@ -147,49 +177,12 @@ export default function DashboardPage() {
       }
     };
     fetchDashboardData();
+
+    // Setup an interval to hard-refresh the schedule data every 3 minutes
+    // to catch DB changes made by the Cron job without needing SSE.
+    const syncInterval = setInterval(fetchDashboardData, 180000);
+    return () => clearInterval(syncInterval);
   }, [router]);
-
-  // --- Clara SSE Real-Time Uplink ---
-  useEffect(() => {
-    const API_BASE_URL =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-
-    // withCredentials tells the browser to send the HTTP-Only clara_token cookie!
-    const eventSource = new EventSource(`${API_BASE_URL}/sse/stream`, {
-      withCredentials: true,
-    });
-
-    eventSource.addEventListener("connected", (event) => {
-      const data = JSON.parse(event.data);
-      console.log("📡", data.message);
-    });
-
-    // The Magic Trigger!
-    eventSource.addEventListener("bot_deployed", (event) => {
-      const data = JSON.parse(event.data);
-      console.log("🔥 CLARA INFILTRATING:", data);
-
-      // 1. Flip the specific meeting card to "infiltrated" status
-      setMeetings((prevMeetings) =>
-        prevMeetings.map((m) =>
-          m.title === data.meetingTitle ? { ...m, status: "infiltrated" } : m,
-        ),
-      );
-
-      // 2. Trigger the Global HUD Alert
-      setLiveAlert({
-        title: "INFILTRATION ACTIVE",
-        message: `Clara has deployed to: ${data.meetingTitle}`,
-      });
-
-      // Clear the alert after 6 seconds
-      setTimeout(() => setLiveAlert(null), 6000);
-    });
-
-    return () => {
-      eventSource.close();
-    };
-  }, []);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -208,7 +201,6 @@ export default function DashboardPage() {
       await AxiosInstance.put("/users/role", { role: selectedRole });
       setUserProfile((prev) => (prev ? { ...prev, role: selectedRole } : null));
       setIsRoleModalOpen(false);
-
       const meetingsRes = await AxiosInstance.get("/calendar/all/meetings");
       setMeetings(meetingsRes.data.meetings || []);
     } catch (error) {
@@ -235,7 +227,6 @@ export default function DashboardPage() {
       });
       const replyText =
         res.data.message || res.data.response || "Task executed successfully.";
-
       setChatMessages((prev) => [
         ...prev,
         { role: "clara", content: replyText },
@@ -254,20 +245,6 @@ export default function DashboardPage() {
       ]);
     } finally {
       setIsAgentTyping(false);
-    }
-  };
-
-  const handleHumanScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight * 1.5) {
-      setVisibleHumanCount((prev) => prev + 10);
-    }
-  };
-
-  const handleBotScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight * 1.5) {
-      setVisibleBotCount((prev) => prev + 10);
     }
   };
 
@@ -295,14 +272,10 @@ export default function DashboardPage() {
     },
   };
 
-  // =========================================================================
-  // ONBOARDING SCREEN
-  // =========================================================================
   if (!isLoading && userProfile && !userProfile.role) {
     return (
       <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative overflow-y-auto">
         <div className="absolute inset-0 bg-purple-900/10 blur-[150px] pointer-events-none" />
-
         <div className="max-w-5xl w-full bg-black/60 border border-white/10 rounded-3xl p-8 md:p-12 backdrop-blur-xl relative z-10 text-center shadow-[0_0_50px_rgba(147,51,234,0.15)] my-12">
           <Bot size={48} className="text-purple-500 mx-auto mb-6" />
           <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
@@ -312,7 +285,6 @@ export default function DashboardPage() {
             To perfectly triage your schedule, Clara needs to understand your
             operational priorities. Select your primary role below.
           </p>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
             {ROLES.map((role) => (
               <button
@@ -332,12 +304,6 @@ export default function DashboardPage() {
               </button>
             ))}
           </div>
-
-          {isSavingRole && (
-            <div className="mt-8 flex items-center justify-center gap-3 text-purple-400 font-mono text-sm animate-pulse">
-              <Activity size={16} /> CONFIGURING AGENT NEURAL NET...
-            </div>
-          )}
         </div>
       </div>
     );
@@ -345,34 +311,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
-      {/* Global Live HUD Alert for SSE Infiltration */}
-      <AnimatePresence>
-        {liveAlert && (
-          <motion.div
-            initial={{ opacity: 0, y: -100, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -50, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md bg-black/80 backdrop-blur-2xl border border-cyan-500/50 shadow-[0_0_40px_rgba(6,182,212,0.4)] rounded-2xl p-4 flex items-center gap-4 overflow-hidden"
-          >
-            {/* Animated scanning background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-            <div className="w-12 h-12 shrink-0 bg-cyan-500/20 border border-cyan-400/50 rounded-full flex items-center justify-center relative">
-              <div className="absolute inset-0 rounded-full border border-cyan-400 animate-ping opacity-50" />
-              <Radio className="text-cyan-400 animate-pulse" size={24} />
-            </div>
-            <div className="relative z-10">
-              <h4 className="text-cyan-400 font-bold text-sm tracking-widest uppercase mb-0.5">
-                {liveAlert.title}
-              </h4>
-              <p className="text-white text-sm font-medium leading-tight">
-                {liveAlert.message}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
       <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
 
@@ -384,73 +322,6 @@ export default function DashboardPage() {
         handleLogout={handleLogout}
       />
 
-      {/* --- CHANGE ROLE MODAL --- */}
-      <AnimatePresence>
-        {isRoleModalOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsRoleModalOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100]"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-5xl bg-[#0a0314] border border-purple-500/30 rounded-3xl p-8 md:p-10 z-[101] shadow-[0_0_50px_rgba(147,51,234,0.15)] max-h-[90vh] overflow-y-auto scrollbar-small"
-            >
-              <button
-                onClick={() => setIsRoleModalOpen(false)}
-                className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-              <div className="text-center mb-10">
-                <Bot size={40} className="text-purple-500 mx-auto mb-4" />
-                <h2 className="text-3xl font-extrabold text-white tracking-tight mb-2">
-                  Reconfigure Protocol
-                </h2>
-                <p className="text-zinc-400">
-                  Update your operational role to adjust how Clara triages your
-                  schedule.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
-                {ROLES.map((role) => (
-                  <button
-                    key={role.id}
-                    disabled={isSavingRole}
-                    onClick={() => handleRoleSelection(role.id)}
-                    className={`group relative flex flex-col p-6 rounded-2xl border transition-all cursor-pointer overflow-hidden disabled:opacity-50 ${userProfile?.role === role.id ? "bg-purple-500/20 border-purple-500 shadow-[0_0_20px_rgba(147,51,234,0.3)]" : "bg-white/5 border-white/10 hover:border-purple-500/50 hover:bg-purple-500/10"}`}
-                  >
-                    <div className="absolute right-0 top-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors" />
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 border transition-transform shadow-[0_0_15px_rgba(147,51,234,0.1)] ${userProfile?.role === role.id ? "bg-purple-600 border-purple-400 text-white" : "bg-black text-purple-400 border-white/5 group-hover:scale-110"}`}
-                    >
-                      {role.icon}
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2">
-                      {role.id}
-                    </h3>
-                    <p className="text-sm text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors">
-                      {role.desc}
-                    </p>
-                  </button>
-                ))}
-              </div>
-              {isSavingRole && (
-                <div className="mt-8 flex items-center justify-center gap-3 text-purple-400 font-mono text-sm animate-pulse">
-                  <Activity size={16} /> RECALIBRATING NEURAL NET...
-                </div>
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* --- Main Dashboard View --- */}
       <main className="max-w-7xl mx-auto px-6 py-10 relative z-10 h-[calc(100vh-80px)] flex flex-col">
         <div className="mb-8 shrink-0 flex items-center justify-between">
           <div>
@@ -506,73 +377,58 @@ export default function DashboardPage() {
                   {humanMeetings.length}
                 </span>
               </div>
-
               <div
-                onScroll={handleHumanScroll}
+                onScroll={(e) => {
+                  if (
+                    e.currentTarget.scrollHeight - e.currentTarget.scrollTop <=
+                    e.currentTarget.clientHeight * 1.5
+                  )
+                    setVisibleHumanCount((p) => p + 10);
+                }}
                 className="flex-1 overflow-y-auto scrollbar-small p-5 space-y-4"
               >
-                <Suspense
-                  fallback={
-                    <div className="text-zinc-500 text-sm text-center py-10">
-                      Decrypting...
-                    </div>
-                  }
+                <motion.div
+                  variants={containerVars}
+                  initial="hidden"
+                  animate="show"
                 >
-                  <motion.div
-                    variants={containerVars}
-                    initial="hidden"
-                    animate="show"
-                  >
-                    {humanMeetings
-                      .slice(0, visibleHumanCount)
-                      .map((meeting) => (
-                        <motion.div
-                          variants={itemVars}
-                          key={meeting.googleEventId}
-                          className="bg-black/50 border border-white/10 rounded-2xl p-6 hover:border-pink-500/30 transition-all group mb-4 shadow-lg hover:shadow-[0_0_20px_rgba(236,72,153,0.1)]"
-                        >
-                          <div className="flex items-start justify-between gap-4 mb-4">
-                            <h4 className="font-bold text-white text-lg leading-tight group-hover:text-pink-50 transition-colors">
-                              {meeting.title}
-                            </h4>
-                            <span className="shrink-0 text-[10px] font-bold text-pink-400 bg-pink-400/10 border border-pink-500/20 px-2.5 py-1 rounded-md uppercase tracking-wider">
-                              Human
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-400 mb-5">
-                            <span className="flex items-center gap-1.5">
-                              <Clock size={14} className="text-pink-400" />{" "}
-                              {formatTime(meeting.startTime)} -{" "}
-                              {formatTime(meeting.endTime)}
-                            </span>
-                            {meeting.meetLink && (
-                              <a
-                                href={meeting.meetLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
-                              >
-                                <Video size={14} /> Join Meet
-                              </a>
-                            )}
-                          </div>
-                          <div className="bg-white/5 rounded-xl p-3.5 border border-white/5">
-                            <p className="text-xs text-zinc-300 leading-relaxed">
-                              <strong className="text-pink-300 uppercase tracking-wide flex items-center gap-1 mb-1">
-                                <AlignLeft size={12} /> Reason
-                              </strong>{" "}
-                              {meeting.reason}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    {humanMeetings.length === 0 && (
-                      <p className="text-center text-zinc-600 text-sm mt-10">
-                        No physical attendance required.
-                      </p>
-                    )}
-                  </motion.div>
-                </Suspense>
+                  {humanMeetings.slice(0, visibleHumanCount).map((meeting) => (
+                    <motion.div
+                      variants={itemVars}
+                      key={meeting.googleEventId}
+                      className="bg-black/50 border border-white/10 rounded-2xl p-6 hover:border-pink-500/30 transition-all group mb-4 shadow-lg hover:shadow-[0_0_20px_rgba(236,72,153,0.1)]"
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <h4 className="font-bold text-white text-lg leading-tight group-hover:text-pink-50 transition-colors">
+                          {meeting.title}
+                        </h4>
+                        <span className="shrink-0 text-[10px] font-bold text-pink-400 bg-pink-400/10 border border-pink-500/20 px-2.5 py-1 rounded-md uppercase tracking-wider">
+                          Human
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-400 mb-5">
+                        <span className="flex items-center gap-1.5">
+                          <Clock size={14} className="text-pink-400" />{" "}
+                          {formatTime(meeting.startTime)} -{" "}
+                          {formatTime(meeting.endTime)}
+                        </span>
+                      </div>
+                      <div className="bg-white/5 rounded-xl p-3.5 border border-white/5">
+                        <p className="text-xs text-zinc-300 leading-relaxed">
+                          <strong className="text-pink-300 uppercase tracking-wide flex items-center gap-1 mb-1">
+                            <AlignLeft size={12} /> Reason
+                          </strong>{" "}
+                          {meeting.reason}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                  {humanMeetings.length === 0 && (
+                    <p className="text-center text-zinc-600 text-sm mt-10">
+                      No physical attendance required.
+                    </p>
+                  )}
+                </motion.div>
               </div>
             </div>
 
@@ -591,118 +447,97 @@ export default function DashboardPage() {
                   {botMeetings.length}
                 </span>
               </div>
-
               <div
-                onScroll={handleBotScroll}
+                onScroll={(e) => {
+                  if (
+                    e.currentTarget.scrollHeight - e.currentTarget.scrollTop <=
+                    e.currentTarget.clientHeight * 1.5
+                  )
+                    setVisibleBotCount((p) => p + 10);
+                }}
                 className="flex-1 overflow-y-auto scrollbar-small p-5 space-y-4 relative"
               >
-                <Suspense
-                  fallback={
-                    <div className="text-purple-500 text-sm text-center py-10">
-                      Decrypting...
-                    </div>
-                  }
+                <motion.div
+                  variants={containerVars}
+                  initial="hidden"
+                  animate="show"
                 >
-                  <motion.div
-                    variants={containerVars}
-                    initial="hidden"
-                    animate="show"
-                  >
-                    {botMeetings.slice(0, visibleBotCount).map((meeting) => {
-                      // Determine if this specific meeting has been triggered by the Cron Job
-                      const isInfiltrating = meeting.status === "infiltrated";
+                  {botMeetings.slice(0, visibleBotCount).map((meeting) => {
+                    const isInfiltrating = meeting.status === "infiltrated";
 
-                      return (
-                        <motion.div
-                          variants={itemVars}
-                          key={meeting.googleEventId}
-                          // Massive UI difference applied here if isInfiltrating is true
-                          className={`relative rounded-2xl p-6 transition-all group mb-4 overflow-hidden shadow-lg 
-                          ${
-                            isInfiltrating
-                              ? "bg-[#0a0514] border-2 border-cyan-500/80 shadow-[0_0_30px_rgba(6,182,212,0.3)]"
-                              : "bg-[#05000a] border border-purple-500/30 hover:border-purple-500/60 hover:bg-[#0a0514]"
-                          }`}
-                        >
-                          {/* Status Edge Bar */}
-                          <div
-                            className={`absolute left-0 top-0 bottom-0 w-1 ${isInfiltrating ? "bg-cyan-400 shadow-[0_0_20px_rgba(6,182,212,1)]" : "bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)]"}`}
-                          />
+                    return (
+                      <motion.div
+                        variants={itemVars}
+                        key={meeting.googleEventId}
+                        className={`relative rounded-2xl p-6 transition-all group mb-4 overflow-hidden shadow-lg ${
+                          isInfiltrating
+                            ? "bg-[#0a0514] border-2 border-cyan-500/80 shadow-[0_0_30px_rgba(6,182,212,0.3)]"
+                            : "bg-[#05000a] border border-purple-500/30 hover:border-purple-500/60"
+                        }`}
+                      >
+                        <div
+                          className={`absolute left-0 top-0 bottom-0 w-1 ${isInfiltrating ? "bg-cyan-400 shadow-[0_0_20px_rgba(6,182,212,1)]" : "bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)]"}`}
+                        />
+                        {isInfiltrating && (
+                          <div className="absolute inset-0 bg-cyan-500/5 animate-pulse pointer-events-none" />
+                        )}
 
-                          {/* Pulse overlay if active */}
-                          {isInfiltrating && (
-                            <div className="absolute inset-0 bg-cyan-500/5 animate-pulse pointer-events-none" />
+                        <div className="flex items-start justify-between gap-4 mb-4 pl-2 relative z-10">
+                          <h4
+                            className={`font-bold text-lg leading-tight transition-colors ${isInfiltrating ? "text-cyan-50" : "text-white group-hover:text-purple-50"}`}
+                          >
+                            {meeting.title}
+                          </h4>
+
+                          {/* Live Countdown Timer injects right here if it's scheduled for the future */}
+                          {!isInfiltrating && (
+                            <CountdownTimer targetTime={meeting.startTime} />
                           )}
 
-                          <div className="flex items-start justify-between gap-4 mb-4 pl-2 relative z-10">
-                            <h4
-                              className={`font-bold text-lg leading-tight transition-colors ${isInfiltrating ? "text-cyan-50" : "text-white group-hover:text-purple-50"}`}
-                            >
-                              {meeting.title}
-                            </h4>
+                          {isInfiltrating && (
+                            <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center gap-1.5 border bg-cyan-900/40 text-cyan-300 border-cyan-500/50">
+                              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />{" "}
+                              INFILTRATING
+                            </span>
+                          )}
+                        </div>
 
-                            {/* Dynamic Status Badge */}
-                            <span
-                              className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center gap-1.5 border ${
+                        <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-500 mb-5 pl-2 relative z-10">
+                          <span className="flex items-center gap-1.5">
+                            <Clock
+                              size={14}
+                              className={
                                 isInfiltrating
-                                  ? "bg-cyan-900/40 text-cyan-300 border-cyan-500/50"
-                                  : "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                              }`}
+                                  ? "text-cyan-400"
+                                  : "text-purple-400"
+                              }
+                            />
+                            {formatTime(meeting.startTime)} -{" "}
+                            {formatTime(meeting.endTime)}
+                          </span>
+                        </div>
+
+                        <div
+                          className={`rounded-xl p-3.5 pl-4 ml-2 border relative z-10 ${isInfiltrating ? "bg-cyan-950/30 border-cyan-500/20" : "bg-black/60 border-purple-500/20"}`}
+                        >
+                          <p className="text-xs text-zinc-300 leading-relaxed">
+                            <strong
+                              className={`uppercase tracking-wide flex items-center gap-1 mb-1 ${isInfiltrating ? "text-cyan-400" : "text-purple-400"}`}
                             >
-                              {isInfiltrating ? (
-                                <>
-                                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                                  INFILTRATING
-                                </>
-                              ) : (
-                                <>
-                                  <Activity size={12} /> Proxy Set
-                                </>
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-500 mb-5 pl-2 relative z-10">
-                            <span className="flex items-center gap-1.5">
-                              <Clock
-                                size={14}
-                                className={
-                                  isInfiltrating
-                                    ? "text-cyan-400"
-                                    : "text-purple-400"
-                                }
-                              />
-                              {formatTime(meeting.startTime)} -{" "}
-                              {formatTime(meeting.endTime)}
-                            </span>
-                          </div>
-
-                          <div
-                            className={`rounded-xl p-3.5 pl-4 ml-2 border relative z-10 ${
-                              isInfiltrating
-                                ? "bg-cyan-950/30 border-cyan-500/20"
-                                : "bg-black/60 border-purple-500/20"
-                            }`}
-                          >
-                            <p className="text-xs text-zinc-300 leading-relaxed">
-                              <strong
-                                className={`uppercase tracking-wide flex items-center gap-1 mb-1 ${isInfiltrating ? "text-cyan-400" : "text-purple-400"}`}
-                              >
-                                <AlignLeft size={12} /> Directive
-                              </strong>
-                              {meeting.reason}
-                            </p>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                    {botMeetings.length === 0 && (
-                      <p className="text-center text-purple-900 text-sm mt-10">
-                        Clara has no assigned proxies today.
-                      </p>
-                    )}
-                  </motion.div>
-                </Suspense>
+                              <AlignLeft size={12} /> Directive
+                            </strong>
+                            {meeting.reason}
+                          </p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                  {botMeetings.length === 0 && (
+                    <p className="text-center text-purple-900 text-sm mt-10">
+                      Clara has no assigned proxies today.
+                    </p>
+                  )}
+                </motion.div>
               </div>
             </div>
           </div>

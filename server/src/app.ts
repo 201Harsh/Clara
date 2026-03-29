@@ -4,6 +4,7 @@ import aiRouter from "./routers/ai.route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import calendarRouter from "./routers/calendar.route.js";
+import cronRouter from "./routers/cron.route.js";
 
 const app = express();
 
@@ -20,5 +21,6 @@ app.use(
 app.use("/users", userRouter);
 app.use("/ai", aiRouter);
 app.use("/calendar", calendarRouter);
+app.use("/cron", cronRouter);
 
 export default app;
