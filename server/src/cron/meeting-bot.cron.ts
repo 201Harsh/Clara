@@ -1,64 +1,79 @@
-import cron from "node-cron";
+import schedule from "node-schedule";
 import CalendarEventModel from "../models/calendar-model.js";
+import CronJobModel from "../models/cron-model.js";
 
-export const startMeetingCronJob = () => {
-  cron.schedule("* * * * *", async () => {
+export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
+  const jobName = meeting.googleEventId;
+
+  if (schedule.scheduledJobs[jobName]) {
+    schedule.scheduledJobs[jobName].cancel();
+  }
+
+  const meetingStartTime = new Date(meeting.startTime);
+  const now = new Date();
+
+  if (meetingStartTime <= now) return;
+
+  schedule.scheduleJob(jobName, meetingStartTime, async () => {
+    console.log(`\n=================================================`);
+    console.log(`[BOT INITIATION] Target: ${meeting.title}`);
+    console.log(`Time: ${new Date().toLocaleTimeString()}`);
+    console.log(`=================================================\n`);
 
     try {
-      const now = new Date();
-      const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60000);
+      await CalendarEventModel.updateOne(
+        { "meetings.googleEventId": meeting.googleEventId },
+        { $set: { "meetings.$.status": "infiltrated" } },
+      );
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      await CronJobModel.create({
+        userId: userIdStr,
+        googleEventId: meeting.googleEventId,
+        meetingTitle: meeting.title,
+        meetLink: meeting.meetLink,
+        status: "triggered",
+      });
 
-      const dailyRecords = await CalendarEventModel.find({ date: today });
+      console.log(`[DB] Infiltration logged successfully.`);
 
-      for (const record of dailyRecords) {
-        for (const meeting of record.meetings) {
-          if (
-            meeting.decision === "bot" &&
-            meeting.status === "scheduled" &&
-            meeting.meetLink
-          ) {
-            const meetingStartTime = new Date(meeting.startTime);
-
-            if (
-              meetingStartTime >= now &&
-              meetingStartTime <= fiveMinutesFromNow
-            ) {
-              console.log(
-                `\n=================================================`,
-              );
-              console.log(`[BOT INITIATION SEQUENCE STRUCK]`);
-              console.log(`Target: ${meeting.title}`);
-              console.log(`Time: ${meetingStartTime.toLocaleTimeString()}`);
-              console.log(`Link: ${meeting.meetLink}`);
-              console.log(`User ID: ${record.userId}`);
-              console.log(
-                `=================================================\n`,
-              );
-
-
-              await CalendarEventModel.updateOne(
-                {
-                  userId: record.userId,
-                  date: today,
-                  "meetings.googleEventId": meeting.googleEventId,
-                },
-                {
-                  $set: { "meetings.$.status": "in-progress" },
-                },
-              );
-            }
-          }
-        }
-      }
     } catch (error) {
-      console.error("[CRON ERROR] Failed to execute meeting scan:", error);
+      console.error("[INFILTRATION ERROR] Database update failed:", error);
     }
   });
 
   console.log(
-    "⚡ [System] Clara Heartbeat (Cron) initialized and listening...",
+    `🕒 [SCHEDULER] Alarm set for '${meeting.title}' at ${meetingStartTime.toLocaleTimeString()}`,
   );
+};
+
+export const initializeAllScheduledBots = async () => {
+  console.log("⚡ [System] Booting up Clara Scheduler...");
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dailyRecords = await CalendarEventModel.find({ date: today });
+
+    let queuedCount = 0;
+
+    for (const record of dailyRecords) {
+      const userIdStr = record.userId.toString();
+
+      for (const meeting of record.meetings) {
+        if (
+          meeting.decision === "bot" &&
+          meeting.status === "scheduled" &&
+          meeting.meetLink
+        ) {
+          scheduleBotInfiltration(userIdStr, meeting);
+          queuedCount++;
+        }
+      }
+    }
+    console.log(
+      `✅ [System] Successfully queued ${queuedCount} bot deployments for today.`,
+    );
+  } catch (error) {
+    console.error("[SCHEDULER ERROR] Failed to initialize daily bots:", error);
+  }
 };
