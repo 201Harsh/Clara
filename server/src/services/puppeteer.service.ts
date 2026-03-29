@@ -1,15 +1,19 @@
 import vanillaPuppeteer from "puppeteer";
 import { addExtra } from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import path from "path";
 
 const puppeteer = addExtra(vanillaPuppeteer as any);
 puppeteer.use(StealthPlugin());
 
-// 🌟 UPGRADE: Human-like randomized delay generator
 const humanDelay = (min: number, max: number) =>
   new Promise((resolve) =>
     setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min),
   );
+
+// 🌟 THE FIX: Create an isolated, dedicated brain folder inside your project
+// (Make sure to add 'clara-browser-data' to your .gitignore file!)
+const claraBrainPath = path.join(process.cwd(), "clara-browser-data");
 
 export const launchClaraInfiltrator = async (
   meetLink: string,
@@ -21,34 +25,39 @@ export const launchClaraInfiltrator = async (
     const browser = await puppeteer.launch({
       headless: false,
       defaultViewport: null,
-      // 1. Point to your actual Chrome installation
       executablePath:
         "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-
-      // 2. Point to the BASE user data folder (remove the \Profile 1 part from the end)
-      // NOTE: Replace 'YourUsername' with your actual Windows folder name!
-      // Also, remember to use double slashes \\ in Windows paths.
-      userDataDir:
-        "C:\\Users\\pande\\AppData\\Local\\Google\\Chrome\\User Data",
-
+      userDataDir: claraBrainPath, // Your isolated brain folder
+      ignoreDefaultArgs: ["--enable-automation"], // Strip bot flags
       args: [
-        // 3. Tell it exactly which profile to load (Default, Profile 1, Profile 2, etc.)
-        "--profile-directory=Profile 11",
-
+        "--disable-blink-features=AutomationControlled", // Mask webdriver
         "--no-sandbox",
         "--disable-setuid-sandbox",
-        "--disable-notifications",
-        "--use-fake-ui-for-media-stream",
-        "--use-fake-device-for-media-stream",
+        // ⚠️ REMOVED: "--disable-notifications" (This was crashing Google Meet!)
+        "--use-fake-ui-for-media-stream", // Auto-accepts hardware prompts
+        "--use-fake-device-for-media-stream", // Feeds fake hardware
+        "--window-size=1920,1080", // Standardize resolution
       ],
     });
 
+    // 🌟 THE FIX: Gracefully grant permissions internally instead of blocking the API
+    const context = browser.defaultBrowserContext();
+    await context.overridePermissions("https://meet.google.com", [
+      "camera",
+      "microphone",
+      "notifications",
+    ]);
+
     const page = await browser.newPage();
+
+    // Add a standard User-Agent to further disguise the bot
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    );
 
     console.log(`🔗 [PUPPETEER] Navigating to ${meetLink}...`);
     await page.goto(meetLink, { waitUntil: "networkidle2" });
 
-    // Human hesitation: Wait 3 to 5 seconds for the page to fully load
     await humanDelay(3000, 5000);
 
     console.log(`👁️ [PUPPETEER] Checking authentication state...`);
@@ -64,9 +73,8 @@ export const launchClaraInfiltrator = async (
       console.log(
         `⌨️ [PUPPETEER] Anonymous mode detected. Typing disguise name...`,
       );
-      await humanDelay(500, 1500); // Hesitate before typing
+      await humanDelay(500, 1500);
       await nameInput.click();
-      // Type with a random delay between keystrokes to mimic human fingers
       await nameInput.type("Clara (Proxy)", {
         delay: Math.floor(Math.random() * 100) + 50,
       });
@@ -76,17 +84,15 @@ export const launchClaraInfiltrator = async (
       );
     }
 
-    // 2. Kill Mic & Cam
     console.log(`🔇 [PUPPETEER] Killing Mic and Camera...`);
-    await humanDelay(1000, 2000); // Hesitate before muting
+    await humanDelay(1000, 2000);
     await page.keyboard.down("Control");
     await page.keyboard.press("d");
     await page.keyboard.press("e");
     await page.keyboard.up("Control");
 
-    await humanDelay(1500, 2500); // Hesitate before looking for the Join button
+    await humanDelay(1500, 2500);
 
-    // 3. The Bulletproof Knock
     console.log(`🚪 [PUPPETEER] Scanning DOM for Join button...`);
 
     await page
@@ -105,7 +111,6 @@ export const launchClaraInfiltrator = async (
     );
 
     if (joinButtons.length > 0) {
-      // 🌟 UPGRADE: The DOM Injection Click. Bypasses all "Not Clickable" overlays.
       await page.evaluate((btn: any) => btn.click(), joinButtons[0]);
       console.log(`✅ [PUPPETEER] Clara successfully knocked on the door!`);
     } else {
