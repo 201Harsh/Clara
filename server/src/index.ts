@@ -8,7 +8,6 @@ const server = http.createServer(app);
 
 const port = process.env.PORT || 5000;
 
-// Call it right before or after your app.listen block
 startMeetingCronJob();
 
 server.listen(port, () => {
