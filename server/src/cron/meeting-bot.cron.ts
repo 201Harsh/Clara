@@ -18,7 +18,7 @@ export const startMeetingCronJob = () => {
           if (
             meeting.decision === "bot" &&
             meeting.status === "scheduled" &&
-            meeting.meetLink // Safety check: Make sure there's actually a link!
+            meeting.meetLink
           ) {
             const meetingStartTime = new Date(meeting.startTime);
 
