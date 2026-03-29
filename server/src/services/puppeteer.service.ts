@@ -15,7 +15,7 @@ export const launchClaraInfiltrator = async (
     const browser = await puppeteer.launch({
       headless: false,
       defaultViewport: null,
-      userDataDir: "./clara-browser-profile", // Clara's permanent brain
+      userDataDir: "./clara-browser-profile",
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -30,13 +30,10 @@ export const launchClaraInfiltrator = async (
     console.log(`🔗 [PUPPETEER] Navigating to ${meetLink}...`);
     await page.goto(meetLink, { waitUntil: "networkidle2" });
 
-    // Hydration pause
     await new Promise((resolve) => setTimeout(resolve, 4000));
 
-    // 1. Check Authentication State
     console.log(`👁️ [PUPPETEER] Checking authentication state...`);
 
-    // Fast-fail in 3 seconds. If she's logged in, this input doesn't exist.
     const nameInput = await page
       .waitForSelector('input[type="text"]', {
         visible: true,
@@ -56,7 +53,6 @@ export const launchClaraInfiltrator = async (
       );
     }
 
-    // 2. Kill Mic & Cam
     console.log(`🔇 [PUPPETEER] Killing Mic and Camera...`);
     await page.keyboard.down("Control");
     await page.keyboard.press("d");
@@ -65,7 +61,6 @@ export const launchClaraInfiltrator = async (
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // 3. The Knock
     console.log(`🚪 [PUPPETEER] Scanning DOM for Join button...`);
 
     await page
@@ -90,7 +85,6 @@ export const launchClaraInfiltrator = async (
       console.log("❌ [PUPPETEER] Mission Failed. Could not find Join button.");
     }
 
-    // DO NOT CLOSE THE BROWSER HERE. Let her stay in the meeting!
   } catch (error) {
     console.error(`❌ [PUPPETEER ERROR] Mission Crashed:`, error);
   }
