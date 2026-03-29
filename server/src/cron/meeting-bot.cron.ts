@@ -17,7 +17,6 @@ export const startMeetingCronJob = () => {
       for (const record of dailyRecords) {
         let scheduleUpdated = false;
 
-        // FIX 2: Convert Mongoose ObjectId to a standard string for strict typing
         const userIdStr = record.userId.toString();
 
         for (const meeting of record.meetings) {
@@ -34,7 +33,6 @@ export const startMeetingCronJob = () => {
             ) {
               console.log(`[BOT INITIATION] Target: ${meeting.title}`);
 
-              // FIX 1: Match your schema's exact status string
               meeting.status = "infiltrated";
               scheduleUpdated = true;
 
@@ -46,7 +44,6 @@ export const startMeetingCronJob = () => {
                 status: "triggered",
               });
 
-              // FIX 2: Pass the stringified ID to the SSE broadcast
               broadcastToUser(userIdStr, "bot_deployed", {
                 meetingTitle: meeting.title,
                 meetLink: meeting.meetLink,
@@ -54,7 +51,6 @@ export const startMeetingCronJob = () => {
                 message: "Clara has initiated meeting infiltration.",
               });
 
-              // TODO: Puppeteer Launch goes here next!
             }
           }
         }
