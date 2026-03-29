@@ -22,6 +22,7 @@ import {
   X,
   AlignLeft,
   MessageSquare,
+  Radio,
 } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 import DashboardHeader from "../Components/DashboardHeader";
@@ -122,6 +123,12 @@ export default function DashboardPage() {
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Custom Alert State for SSE
+  const [liveAlert, setLiveAlert] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
@@ -141,6 +148,48 @@ export default function DashboardPage() {
     };
     fetchDashboardData();
   }, [router]);
+
+  // --- Clara SSE Real-Time Uplink ---
+  useEffect(() => {
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+    // withCredentials tells the browser to send the HTTP-Only clara_token cookie!
+    const eventSource = new EventSource(`${API_BASE_URL}/api/sse/stream`, {
+      withCredentials: true,
+    });
+
+    eventSource.addEventListener("connected", (event) => {
+      const data = JSON.parse(event.data);
+      console.log("📡", data.message);
+    });
+
+    // The Magic Trigger!
+    eventSource.addEventListener("bot_deployed", (event) => {
+      const data = JSON.parse(event.data);
+      console.log("🔥 CLARA INFILTRATING:", data);
+
+      // 1. Flip the specific meeting card to "infiltrated" status
+      setMeetings((prevMeetings) =>
+        prevMeetings.map((m) =>
+          m.title === data.meetingTitle ? { ...m, status: "infiltrated" } : m,
+        ),
+      );
+
+      // 2. Trigger the Global HUD Alert
+      setLiveAlert({
+        title: "INFILTRATION ACTIVE",
+        message: `Clara has deployed to: ${data.meetingTitle}`,
+      });
+
+      // Clear the alert after 6 seconds
+      setTimeout(() => setLiveAlert(null), 6000);
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -246,6 +295,9 @@ export default function DashboardPage() {
     },
   };
 
+  // =========================================================================
+  // ONBOARDING SCREEN
+  // =========================================================================
   if (!isLoading && userProfile && !userProfile.role) {
     return (
       <div className="min-h-screen bg-[#05000a] flex items-center justify-center p-6 relative overflow-y-auto">
@@ -293,8 +345,36 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
-      <div className="fixed top-[-20%] right-[-10%] w-200 h-200 bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] left-[-10%] w-150 h-150 bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
+      {/* Global Live HUD Alert for SSE Infiltration */}
+      <AnimatePresence>
+        {liveAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: -100, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -50, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md bg-black/80 backdrop-blur-2xl border border-cyan-500/50 shadow-[0_0_40px_rgba(6,182,212,0.4)] rounded-2xl p-4 flex items-center gap-4 overflow-hidden"
+          >
+            {/* Animated scanning background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+            <div className="w-12 h-12 shrink-0 bg-cyan-500/20 border border-cyan-400/50 rounded-full flex items-center justify-center relative">
+              <div className="absolute inset-0 rounded-full border border-cyan-400 animate-ping opacity-50" />
+              <Radio className="text-cyan-400 animate-pulse" size={24} />
+            </div>
+            <div className="relative z-10">
+              <h4 className="text-cyan-400 font-bold text-sm tracking-widest uppercase mb-0.5">
+                {liveAlert.title}
+              </h4>
+              <p className="text-white text-sm font-medium leading-tight">
+                {liveAlert.message}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-pink-900/5 rounded-full blur-[150px] pointer-events-none" />
 
       <DashboardHeader
         setIsDropdownOpen={setIsDropdownOpen}
@@ -304,6 +384,7 @@ export default function DashboardPage() {
         handleLogout={handleLogout}
       />
 
+      {/* --- CHANGE ROLE MODAL --- */}
       <AnimatePresence>
         {isRoleModalOpen && (
           <>
@@ -312,13 +393,13 @@ export default function DashboardPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsRoleModalOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md z-100"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-5xl bg-[#0a0314] border border-purple-500/30 rounded-3xl p-8 md:p-10 z-101 shadow-[0_0_50px_rgba(147,51,234,0.15)] max-h-[90vh] overflow-y-auto scrollbar-small"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-5xl bg-[#0a0314] border border-purple-500/30 rounded-3xl p-8 md:p-10 z-[101] shadow-[0_0_50px_rgba(147,51,234,0.15)] max-h-[90vh] overflow-y-auto scrollbar-small"
             >
               <button
                 onClick={() => setIsRoleModalOpen(false)}
@@ -410,6 +491,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="flex-1 grid lg:grid-cols-2 gap-8 overflow-hidden pb-4">
+            {/* COLUMN 1: HUMAN MEETINGS */}
             <div className="flex flex-col h-full bg-[#050505]/60 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
               <div className="p-5 border-b border-white/5 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
                 <div className="flex items-center gap-3">
@@ -494,6 +576,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* COLUMN 2: CLARA DIRECTIVES (BOT MEETINGS) */}
             <div className="flex flex-col h-full bg-[#0a0314]/60 border border-purple-500/20 rounded-3xl overflow-hidden backdrop-blur-xl shadow-[0_0_50px_rgba(147,51,234,0.05)]">
               <div className="p-5 border-b border-purple-500/20 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
                 <div className="flex items-center gap-3">
@@ -525,39 +608,94 @@ export default function DashboardPage() {
                     initial="hidden"
                     animate="show"
                   >
-                    {botMeetings.slice(0, visibleBotCount).map((meeting) => (
-                      <motion.div
-                        variants={itemVars}
-                        key={meeting.googleEventId}
-                        className="relative bg-[#05000a] border border-purple-500/30 rounded-2xl p-6 hover:border-purple-500/60 hover:bg-[#0a0514] transition-all group mb-4 overflow-hidden shadow-[0_5px_20px_rgba(0,0,0,0.5)]"
-                      >
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)]" />
+                    {botMeetings.slice(0, visibleBotCount).map((meeting) => {
+                      // Determine if this specific meeting has been triggered by the Cron Job
+                      const isInfiltrating = meeting.status === "infiltrated";
 
-                        <div className="flex items-start justify-between gap-4 mb-4 pl-2">
-                          <h4 className="font-bold text-white text-lg leading-tight group-hover:text-purple-50 transition-colors">
-                            {meeting.title}
-                          </h4>
-                          <span className="shrink-0 text-[10px] font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center gap-1.5">
-                            <Activity size={12} /> Proxy Active
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-500 mb-5 pl-2">
-                          <span className="flex items-center gap-1.5">
-                            <Clock size={14} className="text-purple-400" />{" "}
-                            {formatTime(meeting.startTime)} -{" "}
-                            {formatTime(meeting.endTime)}
-                          </span>
-                        </div>
-                        <div className="bg-black/60 rounded-xl p-3.5 border border-purple-500/20 pl-4 ml-2">
-                          <p className="text-xs text-zinc-300 leading-relaxed">
-                            <strong className="text-purple-400 uppercase tracking-wide flex items-center gap-1 mb-1">
-                              <AlignLeft size={12} /> Directive
-                            </strong>{" "}
-                            {meeting.reason}
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))}
+                      return (
+                        <motion.div
+                          variants={itemVars}
+                          key={meeting.googleEventId}
+                          // Massive UI difference applied here if isInfiltrating is true
+                          className={`relative rounded-2xl p-6 transition-all group mb-4 overflow-hidden shadow-lg 
+                          ${
+                            isInfiltrating
+                              ? "bg-[#0a0514] border-2 border-cyan-500/80 shadow-[0_0_30px_rgba(6,182,212,0.3)]"
+                              : "bg-[#05000a] border border-purple-500/30 hover:border-purple-500/60 hover:bg-[#0a0514]"
+                          }`}
+                        >
+                          {/* Status Edge Bar */}
+                          <div
+                            className={`absolute left-0 top-0 bottom-0 w-1 ${isInfiltrating ? "bg-cyan-400 shadow-[0_0_20px_rgba(6,182,212,1)]" : "bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)]"}`}
+                          />
+
+                          {/* Pulse overlay if active */}
+                          {isInfiltrating && (
+                            <div className="absolute inset-0 bg-cyan-500/5 animate-pulse pointer-events-none" />
+                          )}
+
+                          <div className="flex items-start justify-between gap-4 mb-4 pl-2 relative z-10">
+                            <h4
+                              className={`font-bold text-lg leading-tight transition-colors ${isInfiltrating ? "text-cyan-50" : "text-white group-hover:text-purple-50"}`}
+                            >
+                              {meeting.title}
+                            </h4>
+
+                            {/* Dynamic Status Badge */}
+                            <span
+                              className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center gap-1.5 border ${
+                                isInfiltrating
+                                  ? "bg-cyan-900/40 text-cyan-300 border-cyan-500/50"
+                                  : "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                              }`}
+                            >
+                              {isInfiltrating ? (
+                                <>
+                                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                                  INFILTRATING
+                                </>
+                              ) : (
+                                <>
+                                  <Activity size={12} /> Proxy Set
+                                </>
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-500 mb-5 pl-2 relative z-10">
+                            <span className="flex items-center gap-1.5">
+                              <Clock
+                                size={14}
+                                className={
+                                  isInfiltrating
+                                    ? "text-cyan-400"
+                                    : "text-purple-400"
+                                }
+                              />
+                              {formatTime(meeting.startTime)} -{" "}
+                              {formatTime(meeting.endTime)}
+                            </span>
+                          </div>
+
+                          <div
+                            className={`rounded-xl p-3.5 pl-4 ml-2 border relative z-10 ${
+                              isInfiltrating
+                                ? "bg-cyan-950/30 border-cyan-500/20"
+                                : "bg-black/60 border-purple-500/20"
+                            }`}
+                          >
+                            <p className="text-xs text-zinc-300 leading-relaxed">
+                              <strong
+                                className={`uppercase tracking-wide flex items-center gap-1 mb-1 ${isInfiltrating ? "text-cyan-400" : "text-purple-400"}`}
+                              >
+                                <AlignLeft size={12} /> Directive
+                              </strong>
+                              {meeting.reason}
+                            </p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                     {botMeetings.length === 0 && (
                       <p className="text-center text-purple-900 text-sm mt-10">
                         Clara has no assigned proxies today.
@@ -586,7 +724,7 @@ export default function DashboardPage() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-linear-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.4)] hover:shadow-[0_0_40px_rgba(147,51,234,0.6)] transition-shadow z-50 border border-white/10"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.4)] hover:shadow-[0_0_40px_rgba(147,51,234,0.6)] transition-shadow z-50 border border-white/10"
       >
         <MessageSquare size={24} />
       </motion.button>
