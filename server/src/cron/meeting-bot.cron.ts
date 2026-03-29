@@ -1,92 +1,89 @@
-import cron from "node-cron";
+import schedule from "node-schedule";
 import CalendarEventModel from "../models/calendar-model.js";
 import CronJobModel from "../models/cron-model.js";
 
-export const startMeetingCronJob = () => {
-  cron.schedule("* * * * *", async () => {
+// --- 1. Schedule a Single Target ---
+export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
+  const jobName = meeting.googleEventId;
+
+  // If Clara reschedules a meeting, cancel the old alarm first
+  if (schedule.scheduledJobs[jobName]) {
+    schedule.scheduledJobs[jobName].cancel();
+  }
+
+  const meetingStartTime = new Date(meeting.startTime);
+  const now = new Date();
+
+  // If the meeting is already in the past, ignore it
+  if (meetingStartTime <= now) return;
+
+  // Set the exact alarm clock for the meeting start time
+  schedule.scheduleJob(jobName, meetingStartTime, async () => {
+    console.log(`\n=================================================`);
+    console.log(`[BOT INITIATION] Target: ${meeting.title}`);
+    console.log(`Time: ${new Date().toLocaleTimeString()}`);
+    console.log(`=================================================\n`);
+
     try {
-      const now = new Date();
+      // 1. Update Calendar Status
+      await CalendarEventModel.updateOne(
+        { "meetings.googleEventId": meeting.googleEventId },
+        { $set: { "meetings.$.status": "infiltrated" } },
+      );
 
-      // Look ahead 5 minutes (Pre-join window)
-      const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60000);
-
-      // Look back 15 minutes (In case she is late or the server restarted, she will still join)
-      const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60000);
-
-      // FIX 1: RIP OUT THE DATE QUERY.
-      // Let Mongoose search the entire database for ANY meeting marked "bot" and "scheduled".
-      // This completely bypasses the UTC/IST timezone bug.
-      const dailyRecords = await CalendarEventModel.find({
-        meetings: {
-          $elemMatch: {
-            decision: "bot",
-            status: "scheduled",
-          },
-        },
+      // 2. Save the DB Log
+      await CronJobModel.create({
+        userId: userIdStr,
+        googleEventId: meeting.googleEventId,
+        meetingTitle: meeting.title,
+        meetLink: meeting.meetLink,
+        status: "triggered",
       });
 
-      // If nothing is pending, stop here and save server resources.
-      if (!dailyRecords || dailyRecords.length === 0) {
-        return;
-      }
+      console.log(`[DB] Infiltration logged successfully.`);
 
-      for (const record of dailyRecords) {
-        const userIdStr = record.userId.toString();
-
-        for (const meeting of record.meetings) {
-          if (
-            meeting.decision === "bot" &&
-            meeting.status === "scheduled" &&
-            meeting.meetLink
-          ) {
-            const meetingStartTime = new Date(meeting.startTime);
-
-            // FIX 2: WIDEN THE TIME WINDOW.
-            // "Is the meeting starting in the next 5 mins, OR did it start in the last 15 mins?"
-            if (
-              meetingStartTime <= fiveMinutesFromNow &&
-              meetingStartTime >= fifteenMinutesAgo
-            ) {
-              console.log(
-                `\n[BOT INITIATION] Target: ${meeting.title} at ${meetingStartTime.toLocaleTimeString()}`,
-              );
-
-              // 1. Force update the Calendar array uniquely by Google Event ID
-              const updateRes = await CalendarEventModel.updateOne(
-                { "meetings.googleEventId": meeting.googleEventId },
-                { $set: { "meetings.$.status": "infiltrated" } },
-              );
-
-              if (updateRes.modifiedCount > 0) {
-                console.log(`[DB] Calendar status updated to 'infiltrated'.`);
-
-                // 2. Create the standalone deployment log ONLY if calendar update succeeds
-                try {
-                  await CronJobModel.create({
-                    userId: userIdStr,
-                    googleEventId: meeting.googleEventId,
-                    meetingTitle: meeting.title,
-                    meetLink: meeting.meetLink,
-                    status: "triggered",
-                  });
-                  console.log(`[DB] Cron Log created successfully.`);
-                } catch (cronErr) {
-                  console.error(
-                    "[DB ERROR] Failed to save CronJobModel:",
-                    cronErr,
-                  );
-                }
-
-                // TODO: Puppeteer Launch goes here next!
-              }
-            }
-          }
-        }
-      }
+      // TODO: Puppeteer Launch goes here next!
     } catch (error) {
-      console.error("[CRON ERROR] Failed to execute scan:", error);
+      console.error("[INFILTRATION ERROR] Database update failed:", error);
     }
   });
 
-  console.log("⚡ [System] Clara Heartbeat (Cron) initialized.");
+  console.log(
+    `🕒 [SCHEDULER] Alarm set for '${meeting.title}' at ${meetingStartTime.toLocaleTimeString()}`,
+  );
+};
+
+// --- 2. Boot-Up Sequence ---
+export const initializeAllScheduledBots = async () => {
+  console.log("⚡ [System] Booting up Clara Scheduler...");
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Find ALL meetings for today
+    const dailyRecords = await CalendarEventModel.find({ date: today });
+
+    let queuedCount = 0;
+
+    for (const record of dailyRecords) {
+      const userIdStr = record.userId.toString();
+
+      for (const meeting of record.meetings) {
+        // Find the ones marked 'bot' that haven't happened yet
+        if (
+          meeting.decision === "bot" &&
+          meeting.status === "scheduled" &&
+          meeting.meetLink
+        ) {
+          scheduleBotInfiltration(userIdStr, meeting);
+          queuedCount++;
+        }
+      }
+    }
+    console.log(
+      `✅ [System] Successfully queued ${queuedCount} bot deployments for today.`,
+    );
+  } catch (error) {
+    console.error("[SCHEDULER ERROR] Failed to initialize daily bots:", error);
+  }
 };
