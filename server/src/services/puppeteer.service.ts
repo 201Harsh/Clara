@@ -2,10 +2,7 @@ import vanillaPuppeteer from "puppeteer";
 import { addExtra } from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
-// FIX 1: Cast as 'any' to bypass the outdated TypeScript definitions in the wrapper
 const puppeteer = addExtra(vanillaPuppeteer as any);
-
-// Equip stealth camouflage
 puppeteer.use(StealthPlugin());
 
 export const launchClaraInfiltrator = async (
@@ -32,12 +29,22 @@ export const launchClaraInfiltrator = async (
     console.log(`🔗 [PUPPETEER] Navigating to ${meetLink}...`);
     await page.goto(meetLink, { waitUntil: "networkidle2" });
 
-    // 1. Wait for the Guest Name Input Box
+    // FIX 1: The Hydration Pause. Give Google's massive React frontend 3 seconds to fully render.
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // FIX 2: Target ONLY visible inputs, and capture the exact Element Handle to avoid DOM mismatches.
     console.log(`⌨️ [PUPPETEER] Entering disguise name...`);
-    await page.waitForSelector('input[type="text"]', { timeout: 15000 });
-    await page.type('input[type="text"]', "Clara (Harsh's Proxy)", {
-      delay: 100,
+    const nameInput = await page.waitForSelector('input[type="text"]', {
+      visible: true,
+      timeout: 15000,
     });
+
+    if (nameInput) {
+      await nameInput.click();
+      await nameInput.type("Clara (Harsh's Proxy)", { delay: 100 });
+    } else {
+      console.log("⚠️ [PUPPETEER] Name input not found. Proceeding anyway.");
+    }
 
     // 2. The Ninja Move: Kill Mic & Cam
     console.log(`🔇 [PUPPETEER] Killing Mic and Camera...`);
@@ -52,7 +59,6 @@ export const launchClaraInfiltrator = async (
     // 3. Knock on the door
     console.log(`🚪 [PUPPETEER] Clicking Join...`);
 
-    // FIX 2: Use the modern Puppeteer XPath syntax since $x is deprecated
     const joinButtons = await page.$$(
       "::-p-xpath(//span[contains(text(), 'Ask to join') or contains(text(), 'Join now')])",
     );
