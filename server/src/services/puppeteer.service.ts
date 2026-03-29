@@ -21,8 +21,20 @@ export const launchClaraInfiltrator = async (
     const browser = await puppeteer.launch({
       headless: false,
       defaultViewport: null,
-      userDataDir: "./clara-browser-profile",
+      // 1. Point to your actual Chrome installation
+      executablePath:
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+
+      // 2. Point to the BASE user data folder (remove the \Profile 1 part from the end)
+      // NOTE: Replace 'YourUsername' with your actual Windows folder name!
+      // Also, remember to use double slashes \\ in Windows paths.
+      userDataDir:
+        "C:\\Users\\YourUsername\\AppData\\Local\\Google\\Chrome\\User Data",
+
       args: [
+        // 3. Tell it exactly which profile to load (Default, Profile 1, Profile 2, etc.)
+        "--profile-directory=Profile 11",
+
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-notifications",
