@@ -17,6 +17,9 @@ export const startMeetingCronJob = () => {
       for (const record of dailyRecords) {
         let scheduleUpdated = false;
 
+        // FIX 2: Convert Mongoose ObjectId to a standard string for strict typing
+        const userIdStr = record.userId.toString();
+
         for (const meeting of record.meetings) {
           if (
             meeting.decision === "bot" &&
@@ -31,24 +34,23 @@ export const startMeetingCronJob = () => {
             ) {
               console.log(`[BOT INITIATION] Target: ${meeting.title}`);
 
-              // 1. Update Calendar Status
-              meeting.status = "in-progress";
+              // FIX 1: Match your schema's exact status string
+              meeting.status = "infiltrated";
               scheduleUpdated = true;
 
-              // 2. Create the Cron Deployment Log
               await CronJobModel.create({
-                userId: record.userId,
+                userId: userIdStr,
                 googleEventId: meeting.googleEventId,
                 meetingTitle: meeting.title,
                 meetLink: meeting.meetLink,
                 status: "triggered",
               });
 
-              // 3. Blast the real-time notification to the React Frontend
-              broadcastToUser(record.userId, "bot_deployed", {
+              // FIX 2: Pass the stringified ID to the SSE broadcast
+              broadcastToUser(userIdStr, "bot_deployed", {
                 meetingTitle: meeting.title,
                 meetLink: meeting.meetLink,
-                status: "in-progress",
+                status: "infiltrated",
                 message: "Clara has initiated meeting infiltration.",
               });
 
@@ -57,7 +59,6 @@ export const startMeetingCronJob = () => {
           }
         }
 
-        // Save the calendar if any meetings were updated to "in-progress"
         if (scheduleUpdated) {
           await record.save();
         }
