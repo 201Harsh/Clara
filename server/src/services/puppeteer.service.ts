@@ -5,6 +5,12 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 const puppeteer = addExtra(vanillaPuppeteer as any);
 puppeteer.use(StealthPlugin());
 
+// 🌟 UPGRADE: Human-like randomized delay generator
+const humanDelay = (min: number, max: number) =>
+  new Promise((resolve) =>
+    setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min),
+  );
+
 export const launchClaraInfiltrator = async (
   meetLink: string,
   meetingTitle: string,
@@ -30,7 +36,8 @@ export const launchClaraInfiltrator = async (
     console.log(`🔗 [PUPPETEER] Navigating to ${meetLink}...`);
     await page.goto(meetLink, { waitUntil: "networkidle2" });
 
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    // Human hesitation: Wait 3 to 5 seconds for the page to fully load
+    await humanDelay(3000, 5000);
 
     console.log(`👁️ [PUPPETEER] Checking authentication state...`);
 
@@ -43,24 +50,31 @@ export const launchClaraInfiltrator = async (
 
     if (nameInput) {
       console.log(
-        `⌨️ [PUPPETEER] Anonymous mode detected. Entering disguise name...`,
+        `⌨️ [PUPPETEER] Anonymous mode detected. Typing disguise name...`,
       );
+      await humanDelay(500, 1500); // Hesitate before typing
       await nameInput.click();
-      await nameInput.type("Clara (Proxy)", { delay: 100 });
+      // Type with a random delay between keystrokes to mimic human fingers
+      await nameInput.type("Clara (Proxy)", {
+        delay: Math.floor(Math.random() * 100) + 50,
+      });
     } else {
       console.log(
         `✅ [PUPPETEER] Authenticated profile detected. Skipping name entry.`,
       );
     }
 
+    // 2. Kill Mic & Cam
     console.log(`🔇 [PUPPETEER] Killing Mic and Camera...`);
+    await humanDelay(1000, 2000); // Hesitate before muting
     await page.keyboard.down("Control");
     await page.keyboard.press("d");
     await page.keyboard.press("e");
     await page.keyboard.up("Control");
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await humanDelay(1500, 2500); // Hesitate before looking for the Join button
 
+    // 3. The Bulletproof Knock
     console.log(`🚪 [PUPPETEER] Scanning DOM for Join button...`);
 
     await page
@@ -79,12 +93,12 @@ export const launchClaraInfiltrator = async (
     );
 
     if (joinButtons.length > 0) {
-      await (joinButtons[0] as any).click();
+      // 🌟 UPGRADE: The DOM Injection Click. Bypasses all "Not Clickable" overlays.
+      await page.evaluate((btn: any) => btn.click(), joinButtons[0]);
       console.log(`✅ [PUPPETEER] Clara successfully knocked on the door!`);
     } else {
       console.log("❌ [PUPPETEER] Mission Failed. Could not find Join button.");
     }
-
   } catch (error) {
     console.error(`❌ [PUPPETEER ERROR] Mission Crashed:`, error);
   }
