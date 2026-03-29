@@ -122,7 +122,7 @@ const contextSchema = z.object({
 });
 
 const agent = createDeepAgent({
-  model: "google-genai:gemini-3.1-flash-lite-previewe", // Swapped to an officially supported Groq LPU model
+  model: "google-genai:gemini-2.5-flash", // Swapped to an officially supported Groq LPU model
   systemPrompt: researchInstructions,
   contextSchema,
   tools: [updateScheduleDatabaseTool, rescheduleMeetingTool],
