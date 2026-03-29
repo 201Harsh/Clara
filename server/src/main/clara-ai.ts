@@ -106,7 +106,7 @@ const rescheduleMeetingTool = tool(
   },
 );
 
-const apiKey = process.env.GROQ_API_KEY as string;
+const apiKey = process.env.GOOGLE_API_KEY as string;
 
 const researchInstructions = `You are Clara, an elite, autonomous AI Chief of Staff.
 
@@ -122,7 +122,7 @@ const contextSchema = z.object({
 });
 
 const agent = createDeepAgent({
-  model: "groq:llama-3.3-70b-versatile", // Swapped to an officially supported Groq LPU model
+  model: "google-genai:gemini-3.1-flash-lite-previewe", // Swapped to an officially supported Groq LPU model
   systemPrompt: researchInstructions,
   contextSchema,
   tools: [updateScheduleDatabaseTool, rescheduleMeetingTool],
