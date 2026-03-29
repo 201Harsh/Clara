@@ -77,6 +77,7 @@ const contextSchema = z.object({
 });
 
 const agent = createDeepAgent({
+  // FIXED: Valid Groq Model
   model: "groq:openai/gpt-oss-120b",
   systemPrompt: researchInstructions,
   contextSchema,
@@ -112,15 +113,9 @@ const claraAgent = async ({
     const combinedMessage = `${dynamicContext}\n\nUSER PROMPT:\n${prompt}`;
 
     const response = await agent.invoke(
-      {
-        messages: [{ role: "user", content: combinedMessage }],
-      },
-      {
-        context: { apiKey, userId },
-      },
+      { messages: [{ role: "user", content: combinedMessage }] },
+      { context: { apiKey, userId } },
     );
-
-    console.log(response)
 
     const lastMessage = response.messages[response.messages.length - 1];
     return lastMessage?.content || "Task executed successfully.";
