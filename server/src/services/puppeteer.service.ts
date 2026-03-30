@@ -11,8 +11,6 @@ const humanDelay = (min: number, max: number) =>
     setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min),
   );
 
-// 🌟 THE FIX: Create an isolated, dedicated brain folder inside your project
-// (Make sure to add 'clara-browser-data' to your .gitignore file!)
 const claraBrainPath = path.join(process.cwd(), "clara-browser-data");
 
 export const launchClaraInfiltrator = async (
@@ -25,22 +23,18 @@ export const launchClaraInfiltrator = async (
     const browser = await puppeteer.launch({
       headless: false,
       defaultViewport: null,
-      executablePath:
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-      userDataDir: claraBrainPath, // Your isolated brain folder
-      ignoreDefaultArgs: ["--enable-automation"], // Strip bot flags
+      userDataDir: claraBrainPath,
+      ignoreDefaultArgs: ["--enable-automation"], 
       args: [
-        "--disable-blink-features=AutomationControlled", // Mask webdriver
+        "--disable-blink-features=AutomationControlled", 
         "--no-sandbox",
         "--disable-setuid-sandbox",
-        // ⚠️ REMOVED: "--disable-notifications" (This was crashing Google Meet!)
-        "--use-fake-ui-for-media-stream", // Auto-accepts hardware prompts
-        "--use-fake-device-for-media-stream", // Feeds fake hardware
-        "--window-size=1920,1080", // Standardize resolution
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
+        "--window-size=1920,1080",
       ],
     });
 
-    // 🌟 THE FIX: Gracefully grant permissions internally instead of blocking the API
     const context = browser.defaultBrowserContext();
     await context.overridePermissions("https://meet.google.com", [
       "camera",
@@ -50,7 +44,6 @@ export const launchClaraInfiltrator = async (
 
     const page = await browser.newPage();
 
-    // Add a standard User-Agent to further disguise the bot
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     );
