@@ -24,7 +24,7 @@ export const deployClaraBot = async (
       meeting_url: meetLink,
       bot_name: "Harsh Pandey (AI Notetaker)", // Using your name to bypass strict host filters
       bot_image:
-        "https://ui-avatars.com/api/?name=Harsh+Pandey&background=0D8ABC&color=fff", // Professional avatar
+        "https://ui-avatars.com/api/?name=Harsh+Pandey&background=0D8ABC&color=fff", 
       entry_message:
         "Hi everyone! I am Harsh's AI assistant. I'm just here to record and take notes.",
       recording_mode: "speaker_view",
