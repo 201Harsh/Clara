@@ -1,30 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, Suspense, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Calendar as CalendarIcon,
-  Clock,
-  Video,
-  User,
-  Bot,
-  Activity,
-  Briefcase,
-  Code,
-  Megaphone,
-  PenTool,
-  LineChart,
-  Headphones,
-  Database,
-  Target,
-  Layers,
-  X,
-  AlignLeft,
-  MessageSquare,
-  Terminal,
-  History,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { Clock, User, Bot, MessageSquare, Terminal } from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 import DashboardHeader from "../Components/DashboardHeader";
 import ClaraAgent from "../Components/ClaraAgent";
@@ -193,7 +172,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
-      <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+      <div className="fixed top-[-20%] right-[-10%] w-200 h-200 bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
       <DashboardHeader
         setIsDropdownOpen={setIsDropdownOpen}
         isDropdownOpen={isDropdownOpen}
@@ -340,7 +319,7 @@ export default function DashboardPage() {
       />
       <motion.button
         onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.4)] z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-linear-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.4)] z-50"
       >
         <MessageSquare size={24} />
       </motion.button>
