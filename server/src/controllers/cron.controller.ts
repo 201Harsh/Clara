@@ -14,7 +14,6 @@ export const getCronLogs = async (
       return;
     }
 
-    // Fetch the latest 20 infiltration logs
     const logs = await CronJobModel.find({ userId })
       .sort({ createdAt: -1 })
       .limit(20);
