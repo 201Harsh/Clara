@@ -14,6 +14,7 @@ const executeInfiltration = async (userIdStr: string, meeting: any) => {
       { "meetings.googleEventId": meeting.googleEventId },
       { $set: { "meetings.$.status": "infiltrated" } },
     );
+    
 
     await CronJobModel.create({
       userId: userIdStr,
