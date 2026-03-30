@@ -1,7 +1,6 @@
 import schedule from "node-schedule";
 import CalendarEventModel from "../models/calendar-model.js";
 import CronJobModel from "../models/cron-model.js";
-import { launchClaraInfiltrator } from "../services/puppeteer.service.js";
 
 const executeInfiltration = async (userIdStr: string, meeting: any) => {
   console.log(`\n=================================================`);
@@ -25,10 +24,6 @@ const executeInfiltration = async (userIdStr: string, meeting: any) => {
     });
 
     console.log(`[DB] Infiltration logged successfully.`);
-
-    if (meeting.meetLink) {
-      await launchClaraInfiltrator(meeting.meetLink, meeting.title);
-    }
   } catch (error) {
     console.error("[INFILTRATION ERROR] Sequence failed:", error);
   }
@@ -45,7 +40,6 @@ export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
   const startTime = new Date(meeting.startTime);
   const endTime = new Date(meeting.endTime);
 
-  // CASE 1: The meeting is already over. Ignore it.
   if (now >= endTime) {
     console.log(
       `[SCHEDULER] Skipped '${meeting.title}' - Meeting has already ended.`,
@@ -53,8 +47,6 @@ export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
     return;
   }
 
-  // CASE 2: THE INSTANT JOIN (The Case Study)
-  // The meeting has already started, but hasn't ended yet.
   if (now >= startTime && now < endTime) {
     console.log(
       `🚨 [SCHEDULER] '${meeting.title}' is currently active! Bypassing alarm and launching instantly.`,
@@ -63,8 +55,6 @@ export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
     return;
   }
 
-  // CASE 3: STANDARD SCHEDULING
-  // The meeting is in the future. Set the alarm clock.
   schedule.scheduleJob(jobName, startTime, async () => {
     await executeInfiltration(userIdStr, meeting);
   });
