@@ -131,6 +131,7 @@ export default function DashboardPage() {
   };
 
   const handleSendMessage = async () => {
+    console.log(isRoleModalOpen)
     if (!chatInput.trim()) return;
     const userMessage = chatInput.trim();
     setChatInput("");
