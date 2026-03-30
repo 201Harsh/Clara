@@ -22,7 +22,7 @@ export const deployClaraBot = async (
   try {
     const response = await client.createBot({
       meeting_url: meetLink,
-      bot_name: "Harsh Pandey (AI Notetaker)", // Using your name to bypass strict host filters
+      bot_name: "Harsh Pandey (AI Notetaker)", 
       bot_image:
         "https://ui-avatars.com/api/?name=Harsh+Pandey&background=0D8ABC&color=fff", 
       entry_message:
