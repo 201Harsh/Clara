@@ -7,6 +7,7 @@ const DashboardHeader = ({
   userProfile,
   setIsRoleModalOpen,
   handleLogout,
+  isRoleModalOpen
 }: any) => {
   return (
     <>

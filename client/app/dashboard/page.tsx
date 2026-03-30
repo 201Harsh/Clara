@@ -228,6 +228,7 @@ export default function DashboardPage() {
         isDropdownOpen={isDropdownOpen}
         userProfile={userProfile}
         setIsRoleModalOpen={setIsRoleModalOpen}
+        isRoleModalOpen={isRoleModalOpen}
         handleLogout={handleLogout}
       />
 
