@@ -20,9 +20,10 @@ const meetingRecordSchema = new mongoose.Schema({
   videoUrl: {
     type: String,
   },
-  transcriptUrl: {
-    type: String,
-  }, // Stores the S3 URL to the JSON file
+  // 🌟 Change this to store the actual raw JSON text permanently
+  transcriptData: {
+    type: mongoose.Schema.Types.Mixed,
+  },
   status: {
     type: String,
     default: "completed",

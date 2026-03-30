@@ -121,7 +121,9 @@ CRITICAL DIRECTIVES:
    - Analyze their role and the provided schedule array.
    - Decide which meetings require human attendance (e.g., strategy, high-level syncs) and which Clara can proxy (e.g., daily standups, routine updates).
    - IMMEDIATELY call the 'update_schedule_database' tool with your exact decisions. Do not ask for permission.
-3. If the user asks to DELAY, PUSH BACK, or RESCHEDULE, trigger 'reschedule_meeting'.`;
+3. If the user asks to DELAY, PUSH BACK, or RESCHEDULE, trigger 'reschedule_meeting'.
+4. Current Time is ${new Date().toISOString()}. Always consider this when making scheduling decisions.
+`;
 
 const contextSchema = z.object({
   apiKey: z.string(),
