@@ -3,6 +3,7 @@ import CalendarEventModel from "../models/calendar-model.js";
 import MeetingRecordModel from "../models/meeting-record-model.js";
 import { createBaasClient } from "@meeting-baas/sdk";
 import axios from "axios"; // 🌟 Make sure axios is imported
+import mongoose from "mongoose";
 
 const client = createBaasClient({
   api_key: process.env.MEETING_BAAS_API_KEY as string,
@@ -41,7 +42,7 @@ export const handleBaasCallback = async (
         const realTranscriptText = s3Response.data;
 
         console.log("💾 Attempting to save Real Meeting Data to DB...");
-        await MeetingRecordModel.create({
+        const savedRecord = await MeetingRecordModel.create({
           userId: extra.userId,
           googleEventId: extra.googleEventId,
           botId: bot_id,
@@ -49,6 +50,11 @@ export const handleBaasCallback = async (
           videoUrl: mp4,
           transcriptData: realTranscriptText, // 🌟 Saved forever.
         });
+
+        console.log(
+          `🔍 [DEBUG] Data saved to DB: ${mongoose.connection.host} / ${mongoose.connection.name}`,
+        );
+        console.log(`🔍 [DEBUG] Saved Document ID: ${savedRecord._id}`);
 
         console.log("📅 Updating UI Status to 'Completed'...");
         await CalendarEventModel.updateOne(
