@@ -8,7 +8,6 @@ import AxiosInstance from "../config/AxiosInstance";
 import DashboardHeader from "../Components/DashboardHeader";
 import ClaraAgent from "../Components/ClaraAgent";
 
-// --- Enhanced Live Countdown Component ---
 const CountdownTimer = ({ targetTime }: { targetTime: string }) => {
   const [timeLeft, setTimeLeft] = useState("");
 
@@ -107,8 +106,7 @@ export default function DashboardPage() {
     };
     fetchDashboardData();
 
-    // Background poller to catch Cron DB updates
-    const syncInterval = setInterval(fetchDashboardData, 30000); // Polling every 30s for demo accuracy
+    const syncInterval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(syncInterval);
   }, [router]);
 
@@ -198,7 +196,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex-1 grid lg:grid-cols-2 gap-8 overflow-hidden pb-4">
-          {/* COLUMN 1: HUMAN MEETINGS */}
           <div className="flex flex-col h-full bg-[#050505]/60 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
             <div className="p-5 border-b border-white/5 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
               <div className="flex items-center gap-3">
@@ -237,7 +234,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* COLUMN 2: CLARA DIRECTIVES (BOT MEETINGS) */}
           <div className="flex flex-col h-full bg-[#0a0314]/60 border border-purple-500/20 rounded-3xl overflow-hidden backdrop-blur-xl shadow-[0_0_50px_rgba(147,51,234,0.05)]">
             <div className="p-5 border-b border-purple-500/20 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
               <div className="flex items-center gap-3">
@@ -274,7 +270,6 @@ export default function DashboardPage() {
                         {meeting.title}
                       </h4>
 
-                      {/* --- THE DEPLOYMENT HUD --- */}
                       {isInfiltrating ? (
                         <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase flex items-center gap-1.5 border bg-cyan-900/40 text-cyan-300 border-cyan-500/50">
                           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />{" "}
