@@ -13,7 +13,6 @@ export const handleBaasCallback = async (
   res: Response,
 ): Promise<any> => {
   try {
-    // 1. Security Check
     const incomingSecret = req.headers["x-mb-secret"];
     const expectedSecret =
       process.env.WEBHOOK_SECRET || "clara-super-secret-key";
@@ -26,7 +25,6 @@ export const handleBaasCallback = async (
     const payload = req.body;
     console.log(`\n🔔 [WEBHOOK] Received Event: ${payload.event}`);
 
-    // 2. Handle Bot Completion
     if (payload.event === "bot.completed") {
       const { bot_id, transcription, mp4, extra } = payload.data;
 
@@ -43,7 +41,6 @@ export const handleBaasCallback = async (
       }
 
       try {
-        // Step A: Save the S3 URLs to our new Database Model
         console.log("💾 Attempting to save MeetingRecord...");
         await MeetingRecordModel.create({
           userId: extra.userId,
@@ -55,7 +52,6 @@ export const handleBaasCallback = async (
         });
         console.log("💾 MeetingRecord saved successfully.");
 
-        // Step B: Update the Calendar status to trigger the Dashboard UI update
         console.log("📅 Attempting to update CalendarEvent...");
         await CalendarEventModel.updateOne(
           {
@@ -66,7 +62,6 @@ export const handleBaasCallback = async (
         );
         console.log("📅 Calendar status updated to 'completed'.");
 
-        // Step C: Delete data off their servers to maintain privacy
         console.log("🧹 Attempting to scrub cloud data...");
         await client.deleteBotData({ bot_id: bot_id });
         console.log("🧹 Cloud data scrubbed.");
@@ -76,7 +71,6 @@ export const handleBaasCallback = async (
       }
     }
 
-    // Handle failures gracefully
     else if (payload.event === "bot.failed") {
       console.error(`❌ [WEBHOOK] Bot Failed:`, payload.data.error_message);
 
@@ -91,7 +85,6 @@ export const handleBaasCallback = async (
       }
     }
 
-    // Always return 200 OK quickly so the webhook provider doesn't retry
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error("❌ [FATAL WEBHOOK ERROR]:", error);
