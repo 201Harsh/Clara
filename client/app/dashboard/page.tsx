@@ -97,6 +97,7 @@ export default function DashboardPage() {
     },
   ]);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
+  const [isFetchingReport, setIsFetchingReport] = useState(false); // 🌟 New State
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -131,7 +132,6 @@ export default function DashboardPage() {
   };
 
   const handleSendMessage = async () => {
-    console.log(isRoleModalOpen)
     if (!chatInput.trim()) return;
     const userMessage = chatInput.trim();
     setChatInput("");
@@ -162,8 +162,44 @@ export default function DashboardPage() {
     }
   };
 
-  const handleFetchReport = (googleEventId: string) => {
-    console.log("Fetching mission report for:", googleEventId);
+  // 🌟 FULLY WIRED MISSION REPORT FUNCTION
+  const handleFetchReport = async (googleEventId: string) => {
+    if (isFetchingReport) return;
+
+    setIsFetchingReport(true);
+    setIsChatOpen(true); // Pop open the chat window
+    setIsAgentTyping(true);
+
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: "Clara, fetch the mission report for this meeting.",
+      },
+    ]);
+
+    try {
+      const res = await AxiosInstance.get(`/ai/report/${googleEventId}`);
+
+      setChatMessages((prev) => [
+        ...prev,
+        // Using res.data.report assuming your backend returns { success: true, report: "..." }
+        { role: "clara", content: res.data.report.response || res.data.report },
+      ]);
+    } catch (error) {
+      console.error(error);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "clara",
+          content:
+            "Error: I was unable to decrypt the databanks for that meeting. The transcript might not be ready yet.",
+        },
+      ]);
+    } finally {
+      setIsAgentTyping(false);
+      setIsFetchingReport(false);
+    }
   };
 
   const formatTime = (isoString: string) =>
@@ -378,6 +414,7 @@ export default function DashboardPage() {
                         </p>
                       </div>
 
+                      {/* 🌟 FETCH BUTTON UI UPDATED WITH LOADING STATE */}
                       {isCompleted && (
                         <motion.button
                           whileHover={{ scale: 1.02 }}
@@ -385,9 +422,17 @@ export default function DashboardPage() {
                           onClick={() =>
                             handleFetchReport(meeting.googleEventId)
                           }
-                          className="w-full mt-2 bg-linear-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-500/40 text-emerald-300 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:from-emerald-600/30 hover:to-teal-600/30 transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                          disabled={isFetchingReport}
+                          className={`w-full mt-2 border py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)] ${
+                            isFetchingReport
+                              ? "bg-zinc-800/50 border-zinc-700 text-zinc-500 cursor-not-allowed"
+                              : "bg-linear-to-r from-emerald-600/20 to-teal-600/20 border-emerald-500/40 text-emerald-300 hover:from-emerald-600/30 hover:to-teal-600/30"
+                          }`}
                         >
-                          <FileText size={16} /> Fetch Mission Report
+                          <FileText size={16} />
+                          {isFetchingReport
+                            ? "Decrypting Audio Logs..."
+                            : "Fetch Mission Report"}
                         </motion.button>
                       )}
                     </div>
