@@ -27,7 +27,6 @@ export const deployClaraBot = async (
         userId: userIdStr,
         meetingTitle: meetingTitle,
       },
-      // 🌟 THE UPGRADE: Tell the bot exactly where to send the data when it's done
       callback_enabled: true,
       callback_config: {
         url: " https://nonservile-elida-epeiric.ngrok-free.dev/webhooks/baas",
