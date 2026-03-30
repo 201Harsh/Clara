@@ -9,9 +9,13 @@ export const generateMissionReport = async (
   res: Response,
 ): Promise<any> => {
   try {
-    const { googleEventId } = req.params;
+    // 🌟 FIX: Explicitly cast to string so Mongoose doesn't throw a TypeScript fit
+    const googleEventId = req.params.googleEventId as string;
 
-    // Extract user from AuthMiddleware
+    if (!googleEventId) {
+      return res.status(400).json({ error: "Missing event ID." });
+    }
+
     const userPayload = (req as any).user;
     const userId = userPayload?.userId || userPayload?.id || userPayload?._id;
 
@@ -19,29 +23,22 @@ export const generateMissionReport = async (
       return res.status(401).json({ error: "Unauthorized access." });
     }
 
-    // 1. Fetch the meeting record to get the S3 Transcript URL
+    // Now Mongoose knows both are guaranteed to be valid types
     const record = await MeetingRecordModel.findOne({ googleEventId, userId });
 
     if (!record || !record.transcriptUrl) {
       return res
         .status(404)
-        .json({
-          error:
-            "Mission report not ready. Transcript is missing or still processing.",
-        });
+        .json({ error: "Mission report not ready. Transcript is missing." });
     }
 
     console.log(
       `[AI SUMMARIZER] Downloading raw transcript for: ${record.meetingTitle}`,
     );
 
-    // 2. Download the JSON file from the Meeting BaaS S3 bucket
     const s3Response = await axios.get(record.transcriptUrl);
     const rawTranscript = s3Response.data;
 
-    // 3. Parse the transcript into a readable script
-    // Meeting BaaS typically returns an array of spoken segments.
-    // We map it so the LLM can easily read: "Speaker Name: What they said"
     let formattedTranscript = "";
     if (Array.isArray(rawTranscript)) {
       formattedTranscript = rawTranscript
@@ -51,11 +48,9 @@ export const generateMissionReport = async (
         )
         .join("\n");
     } else {
-      // Fallback just in case the format is different
       formattedTranscript = JSON.stringify(rawTranscript).substring(0, 10000);
     }
 
-    // 4. Construct the Prompt for Clara
     const dbUser = await UserModel.findById(userId);
     const userName = dbUser?.name || "Boss";
     const role = dbUser?.role || "Unassigned";
@@ -73,11 +68,10 @@ export const generateMissionReport = async (
       """
       ${formattedTranscript.substring(0, 20000)} 
       """
-    `; // Capping at 20k characters to prevent token limits
+    `;
 
-    console.log(`[AI SUMMARIZER] Feedings transcript to Clara AI...`);
+    console.log(`[AI SUMMARIZER] Feeding transcript to Clara AI...`);
 
-    // 5. Generate the summary using your existing AI agent
     const summaryResponse = await claraAgent({
       prompt,
       userId,
