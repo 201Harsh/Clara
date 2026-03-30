@@ -1,6 +1,8 @@
 import schedule from "node-schedule";
 import CalendarEventModel from "../models/calendar-model.js";
 import CronJobModel from "../models/cron-model.js";
+// 🌟 Import the new API Dispatcher
+import { deployClaraBot } from "../services/meeting-baas.service.js";
 
 const executeInfiltration = async (userIdStr: string, meeting: any) => {
   console.log(`\n=================================================`);
@@ -24,6 +26,16 @@ const executeInfiltration = async (userIdStr: string, meeting: any) => {
     });
 
     console.log(`[DB] Infiltration logged successfully.`);
+
+    // 🌟 Launch the API Bot with full context for the Webhook later
+    if (meeting.meetLink) {
+      await deployClaraBot(
+        meeting.meetLink,
+        meeting.title,
+        meeting.googleEventId,
+        userIdStr,
+      );
+    }
   } catch (error) {
     console.error("[INFILTRATION ERROR] Sequence failed:", error);
   }
