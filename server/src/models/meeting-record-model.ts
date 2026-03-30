@@ -20,7 +20,9 @@ const meetingRecordSchema = new mongoose.Schema({
   videoUrl: {
     type: String,
   },
-  transcriptUrl: { type: String }, // Stores the S3 URL to the JSON
+  transcriptUrl: {
+    type: String,
+  },
   status: {
     type: String,
     default: "completed",
