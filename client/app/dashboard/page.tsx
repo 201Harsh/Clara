@@ -3,7 +3,16 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Clock, User, Bot, MessageSquare, Terminal } from "lucide-react";
+import {
+  Clock,
+  User,
+  Bot,
+  MessageSquare,
+  Terminal,
+  ExternalLink,
+  FileText,
+  CheckCircle2,
+} from "lucide-react";
 import AxiosInstance from "../config/AxiosInstance";
 import DashboardHeader from "../Components/DashboardHeader";
 import ClaraAgent from "../Components/ClaraAgent";
@@ -64,6 +73,7 @@ interface UserProfile {
   email: string;
   role: string | null;
 }
+
 interface ChatMessage {
   role: "user" | "clara";
   content: string;
@@ -151,6 +161,12 @@ export default function DashboardPage() {
     }
   };
 
+  // Future function to handle on-demand LLM summary generation
+  const handleFetchReport = (googleEventId: string) => {
+    console.log("Fetching mission report for:", googleEventId);
+    // We will wire this up to your LLM endpoint next!
+  };
+
   const formatTime = (isoString: string) =>
     new Date(isoString).toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -171,6 +187,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#030008] text-zinc-100 font-sans relative overflow-hidden selection:bg-purple-500/30">
       <div className="fixed top-[-20%] right-[-10%] w-200 h-200 bg-purple-900/10 rounded-full blur-[180px] pointer-events-none" />
+
       <DashboardHeader
         setIsDropdownOpen={setIsDropdownOpen}
         isDropdownOpen={isDropdownOpen}
@@ -196,6 +213,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex-1 grid lg:grid-cols-2 gap-8 overflow-hidden pb-4">
+          {/* HUMAN AGENDA */}
           <div className="flex flex-col h-full bg-[#050505]/60 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
             <div className="p-5 border-b border-white/5 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
               <div className="flex items-center gap-3">
@@ -224,16 +242,31 @@ export default function DashboardPage() {
                       Human
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 mb-5">
-                    <Clock size={14} className="text-pink-400" />{" "}
-                    {formatTime(meeting.startTime)} -{" "}
-                    {formatTime(meeting.endTime)}
+
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-400 mb-5">
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={14} className="text-pink-400" />{" "}
+                      {formatTime(meeting.startTime)} -{" "}
+                      {formatTime(meeting.endTime)}
+                    </div>
                   </div>
+
+                  {meeting.meetLink && (
+                    <a
+                      href={meeting.meetLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-medium text-blue-400 hover:text-blue-300 bg-blue-950/30 px-3 py-1.5 rounded-lg border border-blue-900/50 transition-colors"
+                    >
+                      <ExternalLink size={14} /> Jump to Room
+                    </a>
+                  )}
                 </div>
               ))}
             </div>
           </div>
 
+          {/* CLARA DIRECTIVES */}
           <div className="flex flex-col h-full bg-[#0a0314]/60 border border-purple-500/20 rounded-3xl overflow-hidden backdrop-blur-xl shadow-[0_0_50px_rgba(147,51,234,0.05)]">
             <div className="p-5 border-b border-purple-500/20 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
               <div className="flex items-center gap-3">
@@ -248,51 +281,123 @@ export default function DashboardPage() {
                 {botMeetings.length}
               </span>
             </div>
+
             <div className="flex-1 overflow-y-auto scrollbar-small p-5 space-y-4 relative">
               {botMeetings.map((meeting) => {
                 const isInfiltrating = meeting.status === "infiltrated";
+                const isCompleted = meeting.status === "completed"; // Webhook will set this!
+
                 return (
                   <div
                     key={meeting.googleEventId}
-                    className={`relative rounded-2xl p-6 transition-all group mb-4 overflow-hidden shadow-lg ${isInfiltrating ? "bg-[#0a0514] border-2 border-cyan-500/80 shadow-[0_0_30px_rgba(6,182,212,0.3)]" : "bg-[#05000a] border border-purple-500/30"}`}
+                    className={`relative rounded-2xl p-6 transition-all group mb-4 overflow-hidden shadow-lg 
+                      ${
+                        isInfiltrating
+                          ? "bg-[#0a0514] border-2 border-cyan-500/80 shadow-[0_0_30px_rgba(6,182,212,0.3)]"
+                          : isCompleted
+                            ? "bg-[#05140a] border border-emerald-500/30"
+                            : "bg-[#05000a] border border-purple-500/30"
+                      }`}
                   >
+                    {/* Status Indicator Bar */}
                     <div
-                      className={`absolute left-0 top-0 bottom-0 w-1 ${isInfiltrating ? "bg-cyan-400" : "bg-purple-500"}`}
+                      className={`absolute left-0 top-0 bottom-0 w-1 
+                        ${
+                          isInfiltrating
+                            ? "bg-cyan-400"
+                            : isCompleted
+                              ? "bg-emerald-500"
+                              : "bg-purple-500"
+                        }`}
                     />
+
                     {isInfiltrating && (
                       <div className="absolute inset-0 bg-cyan-500/5 animate-pulse pointer-events-none" />
                     )}
 
                     <div className="flex items-start justify-between gap-4 mb-4 pl-2 relative z-10">
                       <h4
-                        className={`font-bold text-lg leading-tight ${isInfiltrating ? "text-cyan-50" : "text-white"}`}
+                        className={`font-bold text-lg leading-tight 
+                          ${
+                            isInfiltrating
+                              ? "text-cyan-50"
+                              : isCompleted
+                                ? "text-emerald-50"
+                                : "text-white"
+                          }`}
                       >
                         {meeting.title}
                       </h4>
 
+                      {/* Status Badges */}
                       {isInfiltrating ? (
                         <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase flex items-center gap-1.5 border bg-cyan-900/40 text-cyan-300 border-cyan-500/50">
                           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />{" "}
                           INFILTRATING
+                        </span>
+                      ) : isCompleted ? (
+                        <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase flex items-center gap-1.5 border bg-emerald-900/40 text-emerald-400 border-emerald-500/50">
+                          <CheckCircle2 size={12} /> COMPLETED
                         </span>
                       ) : (
                         <CountdownTimer targetTime={meeting.startTime} />
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-zinc-500 mb-5 pl-2 relative z-10">
-                      <span className="flex items-center gap-1.5 bg-black/50 px-3 py-1.5 rounded-lg border border-white/5">
-                        <Clock
-                          size={14}
-                          className={
-                            isInfiltrating ? "text-cyan-400" : "text-purple-400"
+                    <div className="pl-2 relative z-10 space-y-4">
+                      {/* Time & Link Row */}
+                      <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-zinc-500">
+                        <span className="flex items-center gap-1.5 bg-black/50 px-3 py-1.5 rounded-lg border border-white/5">
+                          <Clock
+                            size={14}
+                            className={
+                              isInfiltrating
+                                ? "text-cyan-400"
+                                : isCompleted
+                                  ? "text-emerald-400"
+                                  : "text-purple-400"
+                            }
+                          />
+                          {formatTime(meeting.startTime)} -{" "}
+                          {formatTime(meeting.endTime)}
+                        </span>
+
+                        {meeting.meetLink && (
+                          <a
+                            href={meeting.meetLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 text-blue-400 bg-blue-950/30 px-3 py-1.5 rounded-lg border border-blue-900/50 hover:bg-blue-900/40 transition-colors truncate max-w-[200px]"
+                          >
+                            <ExternalLink size={12} />{" "}
+                            {meeting.meetLink.replace("https://", "")}
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Clara's Reasoning Databank */}
+                      <div className="bg-black/60 border border-white/5 rounded-xl p-3 shadow-inner">
+                        <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+                          <Terminal size={10} /> Agent Reasoning
+                        </span>
+                        <p className="text-sm text-zinc-300 italic font-medium">
+                          "{meeting.reason}"
+                        </p>
+                      </div>
+
+                      {/* Dynamic Action Button */}
+                      {isCompleted && (
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() =>
+                            handleFetchReport(meeting.googleEventId)
                           }
-                        />
-                        Deploying At:{" "}
-                        <strong className="text-zinc-200">
-                          {formatTime(meeting.startTime)}
-                        </strong>
-                      </span>
+                          className="w-full mt-2 bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-500/40 text-emerald-300 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:from-emerald-600/30 hover:to-teal-600/30 transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                        >
+                          <FileText size={16} /> Fetch Mission Report
+                        </motion.button>
+                      )}
                     </div>
                   </div>
                 );
@@ -312,6 +417,7 @@ export default function DashboardPage() {
         chatEndRef={chatEndRef}
         handleSendMessage={handleSendMessage}
       />
+
       <motion.button
         onClick={() => setIsChatOpen(!isChatOpen)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-linear-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.4)] z-50"
