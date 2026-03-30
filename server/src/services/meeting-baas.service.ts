@@ -3,44 +3,53 @@ import { createBaasClient } from "@meeting-baas/sdk";
 export const deployClaraBot = async (
   meetLink: string,
   meetingTitle: string,
+  googleEventId: string,
+  userIdStr: string,
 ) => {
-  console.log(`\n🚀 [MEETING BAAS] Deploying Clara to: ${meetingTitle}`);
+  console.log(`\n🚀 [MEETING BAAS] Deploying AI Proxy to: ${meetingTitle}`);
 
   const apiKey = process.env.MEETING_BAAS_API_KEY;
   if (!apiKey) {
-    console.error(
-      "❌ [MEETING BAAS] Missing API Key. Add MEETING_BAAS_API_KEY to your .env file.",
-    );
+    console.error("❌ [MEETING BAAS] Missing API Key in .env file.");
     return;
   }
 
-  // Initialize the modern v2 client
+  // Initialize the v2 client precisely as the docs demand
   const client = createBaasClient({
     api_key: apiKey,
     api_version: "v2",
   });
 
   try {
-    // Send the bot to the meeting
-    const { success, data, error, statusCode } = await client.createBot({
-      bot_name: "Clara (AI Proxy)",
+    // 🌟 Create the Bot using the V2 API
+    const response = await client.createBot({
       meeting_url: meetLink,
-      // You can add an entry message so she announces herself in the chat!
+      bot_name: "Harsh Pandey (AI Notetaker)", // Using your name to bypass strict host filters
+      bot_image:
+        "https://ui-avatars.com/api/?name=Harsh+Pandey&background=0D8ABC&color=fff", // Professional avatar
       entry_message:
-        "Hi everyone! I am Clara, Harsh's AI assistant. I'm just here to take notes.",
+        "Hi everyone! I am Harsh's AI assistant. I'm just here to record and take notes.",
+      recording_mode: "speaker_view",
+      // The 'extra' field is critical. This data will be sent back to us in the Webhook!
+      extra: {
+        googleEventId: googleEventId,
+        userId: userIdStr,
+        meetingTitle: meetingTitle,
+      },
     });
 
-    if (success) {
+    // 🌟 TypeScript Discriminated Union Check (Fixes your TS Errors!)
+    if (response.success) {
       console.log(`✅ [MEETING BAAS] Deployment Successful!`);
-      console.log(`🤖 [BOT ID]: ${data.bot_id}`);
+      console.log(`🤖 [BOT ID]: ${response.data.bot_id}`);
       console.log(
-        `Clara is currently flying to Google's servers and will join the room shortly.`,
+        `The proxy is currently spinning up on cloud servers and will join shortly.`,
       );
     } else {
       console.error(
-        `❌ [MEETING BAAS ERROR] Deployment Failed (Status ${statusCode}):`,
-        error,
+        `❌ [MEETING BAAS] Deployment Failed. Code: ${response.statusCode}`,
       );
+      console.error(`Reason: ${response.error}`);
     }
   } catch (err) {
     console.error(`❌ [CRITICAL ERROR] Failed to reach Meeting BaaS API:`, err);
