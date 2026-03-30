@@ -14,14 +14,12 @@ export const deployClaraBot = async (
     return;
   }
 
-  // Initialize the v2 client precisely as the docs demand
   const client = createBaasClient({
     api_key: apiKey,
     api_version: "v2",
   });
 
   try {
-    // 🌟 Create the Bot using the V2 API
     const response = await client.createBot({
       meeting_url: meetLink,
       bot_name: "Harsh Pandey (AI Notetaker)", // Using your name to bypass strict host filters
@@ -30,7 +28,6 @@ export const deployClaraBot = async (
       entry_message:
         "Hi everyone! I am Harsh's AI assistant. I'm just here to record and take notes.",
       recording_mode: "speaker_view",
-      // The 'extra' field is critical. This data will be sent back to us in the Webhook!
       extra: {
         googleEventId: googleEventId,
         userId: userIdStr,
@@ -38,7 +35,6 @@ export const deployClaraBot = async (
       },
     });
 
-    // 🌟 TypeScript Discriminated Union Check (Fixes your TS Errors!)
     if (response.success) {
       console.log(`✅ [MEETING BAAS] Deployment Successful!`);
       console.log(`🤖 [BOT ID]: ${response.data.bot_id}`);
