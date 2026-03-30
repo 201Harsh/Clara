@@ -161,10 +161,8 @@ export default function DashboardPage() {
     }
   };
 
-  // Future function to handle on-demand LLM summary generation
   const handleFetchReport = (googleEventId: string) => {
     console.log("Fetching mission report for:", googleEventId);
-    // We will wire this up to your LLM endpoint next!
   };
 
   const formatTime = (isoString: string) =>
@@ -213,7 +211,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex-1 grid lg:grid-cols-2 gap-8 overflow-hidden pb-4">
-          {/* HUMAN AGENDA */}
           <div className="flex flex-col h-full bg-[#050505]/60 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
             <div className="p-5 border-b border-white/5 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
               <div className="flex items-center gap-3">
@@ -266,7 +263,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* CLARA DIRECTIVES */}
           <div className="flex flex-col h-full bg-[#0a0314]/60 border border-purple-500/20 rounded-3xl overflow-hidden backdrop-blur-xl shadow-[0_0_50px_rgba(147,51,234,0.05)]">
             <div className="p-5 border-b border-purple-500/20 bg-black/60 flex items-center justify-between shrink-0 shadow-md">
               <div className="flex items-center gap-3">
@@ -299,7 +295,6 @@ export default function DashboardPage() {
                             : "bg-[#05000a] border border-purple-500/30"
                       }`}
                   >
-                    {/* Status Indicator Bar */}
                     <div
                       className={`absolute left-0 top-0 bottom-0 w-1 
                         ${
@@ -329,7 +324,6 @@ export default function DashboardPage() {
                         {meeting.title}
                       </h4>
 
-                      {/* Status Badges */}
                       {isInfiltrating ? (
                         <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase flex items-center gap-1.5 border bg-cyan-900/40 text-cyan-300 border-cyan-500/50">
                           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />{" "}
@@ -345,7 +339,6 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="pl-2 relative z-10 space-y-4">
-                      {/* Time & Link Row */}
                       <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-zinc-500">
                         <span className="flex items-center gap-1.5 bg-black/50 px-3 py-1.5 rounded-lg border border-white/5">
                           <Clock
@@ -375,7 +368,6 @@ export default function DashboardPage() {
                         )}
                       </div>
 
-                      {/* Clara's Reasoning Databank */}
                       <div className="bg-black/60 border border-white/5 rounded-xl p-3 shadow-inner">
                         <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
                           <Terminal size={10} /> Agent Reasoning
@@ -385,7 +377,6 @@ export default function DashboardPage() {
                         </p>
                       </div>
 
-                      {/* Dynamic Action Button */}
                       {isCompleted && (
                         <motion.button
                           whileHover={{ scale: 1.02 }}
