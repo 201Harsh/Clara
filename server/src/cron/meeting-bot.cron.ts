@@ -3,7 +3,6 @@ import CalendarEventModel from "../models/calendar-model.js";
 import CronJobModel from "../models/cron-model.js";
 import { launchClaraInfiltrator } from "../services/puppeteer.service.js";
 
-// --- Helper: The actual launch and DB logging sequence ---
 const executeInfiltration = async (userIdStr: string, meeting: any) => {
   console.log(`\n=================================================`);
   console.log(`[BOT INITIATION SEQUENCE STRUCK]`);
@@ -12,13 +11,11 @@ const executeInfiltration = async (userIdStr: string, meeting: any) => {
   console.log(`=================================================\n`);
 
   try {
-    // 1. Update Calendar Status
     await CalendarEventModel.updateOne(
       { "meetings.googleEventId": meeting.googleEventId },
       { $set: { "meetings.$.status": "infiltrated" } },
     );
 
-    // 2. Save the DB Log
     await CronJobModel.create({
       userId: userIdStr,
       googleEventId: meeting.googleEventId,
@@ -29,7 +26,6 @@ const executeInfiltration = async (userIdStr: string, meeting: any) => {
 
     console.log(`[DB] Infiltration logged successfully.`);
 
-    // 3. Launch the Physical Bot
     if (meeting.meetLink) {
       await launchClaraInfiltrator(meeting.meetLink, meeting.title);
     }
@@ -38,11 +34,9 @@ const executeInfiltration = async (userIdStr: string, meeting: any) => {
   }
 };
 
-// --- Main Export: Smart Scheduler ---
 export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
   const jobName = meeting.googleEventId;
 
-  // Cancel any existing alarms for this specific meeting
   if (schedule.scheduledJobs[jobName]) {
     schedule.scheduledJobs[jobName].cancel();
   }
@@ -80,7 +74,6 @@ export const scheduleBotInfiltration = (userIdStr: string, meeting: any) => {
   );
 };
 
-// --- Boot-Up Sequence ---
 export const initializeAllScheduledBots = async () => {
   console.log("⚡ [System] Booting up Clara Scheduler...");
   try {
