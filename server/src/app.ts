@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import calendarRouter from "./routers/calendar.route.js";
 import cronRouter from "./routers/cron.route.js";
+import WebhookRouter from "./routers/webhook.routes.js";
 
 const app = express();
 
@@ -22,5 +23,6 @@ app.use("/users", userRouter);
 app.use("/ai", aiRouter);
 app.use("/calendar", calendarRouter);
 app.use("/cron", cronRouter);
+app.use("/webhooks", WebhookRouter);
 
 export default app;
