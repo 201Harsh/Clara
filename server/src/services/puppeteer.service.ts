@@ -23,17 +23,15 @@ export const launchClaraInfiltrator = async (
     const browser = await puppeteer.launch({
       headless: false,
       defaultViewport: null,
-      executablePath:
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-      userDataDir: claraBrainPath, // Your isolated brain folder
-      ignoreDefaultArgs: ["--enable-automation"], // Strip bot flags
+      userDataDir: claraBrainPath,
+      ignoreDefaultArgs: ["--enable-automation"], 
       args: [
-        "--disable-blink-features=AutomationControlled", // Mask webdriver
+        "--disable-blink-features=AutomationControlled", 
         "--no-sandbox",
         "--disable-setuid-sandbox",
-        "--use-fake-ui-for-media-stream", // Auto-accepts hardware prompts
-        "--use-fake-device-for-media-stream", // Feeds fake hardware
-        "--window-size=1920,1080", // Standardize resolution
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
+        "--window-size=1920,1080",
       ],
     });
 
