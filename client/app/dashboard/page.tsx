@@ -360,7 +360,7 @@ export default function DashboardPage() {
                             href={meeting.meetLink}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center gap-1.5 text-blue-400 bg-blue-950/30 px-3 py-1.5 rounded-lg border border-blue-900/50 hover:bg-blue-900/40 transition-colors truncate max-w-[200px]"
+                            className="flex items-center gap-1.5 text-blue-400 bg-blue-950/30 px-3 py-1.5 rounded-lg border border-blue-900/50 hover:bg-blue-900/40 transition-colors truncate max-w-50"
                           >
                             <ExternalLink size={12} />{" "}
                             {meeting.meetLink.replace("https://", "")}
@@ -384,7 +384,7 @@ export default function DashboardPage() {
                           onClick={() =>
                             handleFetchReport(meeting.googleEventId)
                           }
-                          className="w-full mt-2 bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-500/40 text-emerald-300 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:from-emerald-600/30 hover:to-teal-600/30 transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                          className="w-full mt-2 bg-linear-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-500/40 text-emerald-300 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:from-emerald-600/30 hover:to-teal-600/30 transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)]"
                         >
                           <FileText size={16} /> Fetch Mission Report
                         </motion.button>
