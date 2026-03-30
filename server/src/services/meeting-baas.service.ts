@@ -33,7 +33,6 @@ export const deployClaraBot = async (
         userId: userIdStr,
         meetingTitle: meetingTitle,
       },
-      // 🌟 The Callback Configuration
       callback_enabled: true,
       callback_config: {
         // IMPORTANT: Change this Ngrok URL to your actual active Ngrok URL!
