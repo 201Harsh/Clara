@@ -1,7 +1,6 @@
 import schedule from "node-schedule";
 import CalendarEventModel from "../models/calendar-model.js";
 import CronJobModel from "../models/cron-model.js";
-import { launchClaraInfiltrator } from "../services/puppeteer.service.js";
 
 const executeInfiltration = async (userIdStr: string, meeting: any) => {
   console.log(`\n=================================================`);
@@ -25,10 +24,6 @@ const executeInfiltration = async (userIdStr: string, meeting: any) => {
     });
 
     console.log(`[DB] Infiltration logged successfully.`);
-
-    if (meeting.meetLink) {
-      await launchClaraInfiltrator(meeting.meetLink, meeting.title);
-    }
   } catch (error) {
     console.error("[INFILTRATION ERROR] Sequence failed:", error);
   }
