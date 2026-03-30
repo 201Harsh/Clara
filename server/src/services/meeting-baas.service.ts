@@ -30,7 +30,7 @@ export const deployClaraBot = async (
       // 🌟 THE UPGRADE: Tell the bot exactly where to send the data when it's done
       callback_enabled: true,
       callback_config: {
-        url: " https://nonservile-elida-epeiric.ngrok-free.dev/api/webhooks/baas", // CHANGE THIS FOR LOCAL TESTING
+        url: " https://nonservile-elida-epeiric.ngrok-free.dev/api/webhooks/baas",
         method: "POST",
         secret: process.env.WEBHOOK_SECRET || "clara-super-secret-key", // Secures your endpoint
       },
