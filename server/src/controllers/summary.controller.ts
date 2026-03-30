@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import MeetingRecordModel from "../models/meeting-record-model.js";
-import axios from "axios";
 import claraAgent from "../main/clara-ai.js";
 import UserModel from "../models/user-model.js";
 
@@ -9,37 +8,32 @@ export const generateMissionReport = async (
   res: Response,
 ): Promise<any> => {
   try {
-    // 🌟 FIX: Explicitly cast to string so Mongoose doesn't throw a TypeScript fit
     const googleEventId = req.params.googleEventId as string;
-
-    if (!googleEventId) {
+    if (!googleEventId)
       return res.status(400).json({ error: "Missing event ID." });
-    }
 
     const userPayload = (req as any).user;
     const userId = userPayload?.userId || userPayload?.id || userPayload?._id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized access." });
 
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized access." });
-    }
-
-    // Now Mongoose knows both are guaranteed to be valid types
+    // 🌟 Pull the REAL data directly from your MongoDB
     const record = await MeetingRecordModel.findOne({ googleEventId, userId });
 
-    if (!record || !record.transcriptUrl) {
+    if (!record || !record.transcriptData) {
       return res
         .status(404)
-        .json({ error: "Mission report not ready. Transcript is missing." });
+        .json({
+          error: "Mission report not ready. Real transcript is missing.",
+        });
     }
 
     console.log(
-      `[AI SUMMARIZER] Downloading raw transcript for: ${record.meetingTitle}`,
+      `[AI SUMMARIZER] Formatting real transcript for: ${record.meetingTitle}`,
     );
 
-    const s3Response = await axios.get(record.transcriptUrl);
-    const rawTranscript = s3Response.data;
-
+    const rawTranscript = record.transcriptData;
     let formattedTranscript = "";
+
     if (Array.isArray(rawTranscript)) {
       formattedTranscript = rawTranscript
         .map(
@@ -57,9 +51,9 @@ export const generateMissionReport = async (
 
     const prompt = `
       You are Clara, an elite AI Executive Assistant. 
-      Analyze the following meeting transcript for your boss, ${userName}.
+      Analyze the following real meeting transcript for your boss, ${userName}.
       
-      Please provide a structured "Mission Report" containing:
+      Provide a structured "Mission Report":
       1. Executive Summary (2-3 sentences max)
       2. Key Decisions Made
       3. Action Items (specifically note if any are assigned to ${userName})
@@ -70,7 +64,7 @@ export const generateMissionReport = async (
       """
     `;
 
-    console.log(`[AI SUMMARIZER] Feeding transcript to Clara AI...`);
+    console.log(`[AI SUMMARIZER] Feeding Real Data to Clara AI...`);
 
     const summaryResponse = await claraAgent({
       prompt,
@@ -82,10 +76,7 @@ export const generateMissionReport = async (
 
     console.log(`✅ [AI SUMMARIZER] Report generated successfully.`);
 
-    return res.status(200).json({
-      success: true,
-      report: summaryResponse,
-    });
+    return res.status(200).json({ success: true, report: summaryResponse });
   } catch (error) {
     console.error("[SUMMARIZER ERROR]:", error);
     return res
