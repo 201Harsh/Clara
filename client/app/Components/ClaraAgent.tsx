@@ -102,9 +102,7 @@ const ClaraAgent = ({
               <div ref={chatEndRef} />
             </div>
 
-            {/* INPUT AREA */}
             <div className="p-4 border-t border-purple-500/20 bg-black/40 shrink-0">
-              {/* Changed rounded-full to rounded-2xl so it looks good when expanded, and items-end so button stays at bottom */}
               <div className="relative flex items-end bg-[#05000a] border border-purple-500/30 rounded-2xl focus-within:border-purple-400/60 transition-colors p-1.5">
                 <textarea
                   ref={textareaRef}
