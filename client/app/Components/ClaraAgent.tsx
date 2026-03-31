@@ -14,20 +14,16 @@ const ClaraAgent = ({
 }: any) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Dynamically adjust textarea height based on content
   useEffect(() => {
     if (textareaRef.current) {
-      // Reset height to auto to properly calculate shrinkage if user deletes text
       textareaRef.current.style.height = "auto";
-      // Cap the maximum height at 120px (approx 5-6 lines) before enabling the scrollbar
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
   }, [chatInput]);
 
-  // Handle Enter to send, Shift+Enter for new line
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); // Prevent adding a new line
+      e.preventDefault();
       if (chatInput.trim() && !isAgentTyping) {
         handleSendMessage();
       }
