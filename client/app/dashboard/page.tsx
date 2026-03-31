@@ -162,12 +162,11 @@ export default function DashboardPage() {
     }
   };
 
-  // 🌟 FULLY WIRED MISSION REPORT FUNCTION
   const handleFetchReport = async (googleEventId: string) => {
     if (isFetchingReport) return;
 
     setIsFetchingReport(true);
-    setIsChatOpen(true); // Pop open the chat window
+    setIsChatOpen(true);
     setIsAgentTyping(true);
 
     setChatMessages((prev) => [
@@ -183,7 +182,6 @@ export default function DashboardPage() {
 
       setChatMessages((prev) => [
         ...prev,
-        // Using res.data.report assuming your backend returns { success: true, report: "..." }
         { role: "clara", content: res.data.report.response || res.data.report },
       ]);
     } catch (error) {
@@ -319,7 +317,7 @@ export default function DashboardPage() {
             <div className="flex-1 overflow-y-auto scrollbar-small p-5 space-y-4 relative">
               {botMeetings.map((meeting) => {
                 const isInfiltrating = meeting.status === "infiltrated";
-                const isCompleted = meeting.status === "completed"; // Webhook will set this!
+                const isCompleted = meeting.status === "completed";
 
                 return (
                   <div
@@ -415,7 +413,6 @@ export default function DashboardPage() {
                         </p>
                       </div>
 
-                      {/* 🌟 FETCH BUTTON UI UPDATED WITH LOADING STATE */}
                       {isCompleted && (
                         <motion.button
                           whileHover={{ scale: 1.02 }}
