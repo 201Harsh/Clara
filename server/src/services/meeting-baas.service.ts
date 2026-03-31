@@ -35,7 +35,6 @@ export const deployClaraBot = async (
       },
       callback_enabled: true,
       callback_config: {
-        // IMPORTANT: Change this Ngrok URL to your actual active Ngrok URL!
         url: "https://nonservile-elida-epeiric.ngrok-free.dev/webhooks/baas",
         method: "POST",
         secret: process.env.WEBHOOK_SECRET || "clara-super-secret-key",
