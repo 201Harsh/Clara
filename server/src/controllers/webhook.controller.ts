@@ -26,7 +26,6 @@ export const handleBaasCallback = async (
     const payload = req.body;
     console.log(`\n🔔 [WEBHOOK] Received Event: ${payload.event}`);
 
-    // 🌟 1. DUMP THE RAW JSON TO TERMINAL TO FIND THE MISSING DATA
     console.log(`\n🔍 [RAW PAYLOAD DUMP]:`);
     console.log(JSON.stringify(payload, null, 2));
     console.log(`----------------------------------------\n`);
