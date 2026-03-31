@@ -46,7 +46,6 @@ export const handleBaasCallback = async (
 
       try {
         console.log("📥 Downloading real transcript data from AWS S3...");
-        // 🌟 GET THE REAL DATA IMMEDIATELY
         const s3Response = await axios.get(transcription);
         const realTranscriptText = s3Response.data;
 
