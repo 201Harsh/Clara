@@ -28,6 +28,13 @@ export const deployClaraBot = async (
       entry_message:
         "Hi everyone! I am Harsh's AI assistant. I'm just here to record and take notes.",
       recording_mode: "speaker_view",
+
+      // 🌟 THE FIX: Turn on the Gladia AI Transcription Engine
+      transcription_enabled: true,
+      transcription_config: {
+        provider: "gladia",
+      },
+
       extra: {
         googleEventId: googleEventId,
         userId: userIdStr,
