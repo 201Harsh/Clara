@@ -56,7 +56,7 @@ export const handleBaasCallback = async (
           botId: bot_id,
           meetingTitle: extra.meetingTitle,
           videoUrl: mp4,
-          transcriptData: realTranscriptText, // 🌟 Saved forever.
+          transcriptData: realTranscriptText,
         });
 
         console.log(
