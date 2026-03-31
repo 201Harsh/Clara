@@ -26,13 +26,22 @@ export const handleBaasCallback = async (
     const payload = req.body;
     console.log(`\n🔔 [WEBHOOK] Received Event: ${payload.event}`);
 
+    // 🌟 1. DUMP THE RAW JSON TO TERMINAL TO FIND THE MISSING DATA
+    console.log(`\n🔍 [RAW PAYLOAD DUMP]:`);
+    console.log(JSON.stringify(payload, null, 2));
+    console.log(`----------------------------------------\n`);
+
     if (payload.event === "bot.completed") {
       const { bot_id, transcription, mp4, extra } = payload.data;
 
+      // 🌟 2. LOG WHY IT IS FAILING (The Safety Net)
       if (!extra || !extra.userId || !extra.googleEventId) {
+        console.warn(`🚨 [SAFETY NET TRIGGERED] Missing 'extra' metadata!`);
+        console.warn(`Looking for extra inside payload.data, but got:`, extra);
+        // We still return 200 so Meeting BaaS doesn't spam us with retries
         return res
           .status(200)
-          .json({ success: true, message: "Ignored legacy bot" });
+          .json({ success: true, message: "Missing metadata" });
       }
 
       try {
